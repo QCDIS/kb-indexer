@@ -1,0 +1,677 @@
+{
+  "description": [
+    "Text",
+    "A brief description of a set of distribution options.",
+    "len(15)",
+    "Discovery parameter",
+    "comments"
+  ],
+  "identifier": [
+    "PropertyValue/Text",
+    "unique identifier for this metadata record",
+    "len(15)",
+    "ISBN",
+    "GTIN",
+    "UUID",
+    "URI",
+    "URL",
+    "id",
+    "metadataIdentifier",
+    "gmd:fileIdentifier",
+    "gco:CharacterString",
+    "pid"
+  ],
+  "keywords": [
+    "Text/URL",
+    "Keywords or tags used to describe this content. Multiple entries in a keywords list are typically delimited by commas.",
+    "array(comma)",
+    "Parameter groups",
+    "gmd:keyword",
+    "gco:CharacterString",
+    "keywords",
+    "label",
+    "synonyms",
+    "name",
+    "rank",
+    "genus",
+    "species"
+  ],
+  "language": [
+    "Language/Text",
+    "The language of the content or performance or used in an action. Please use one of the language codes from the IETF BCP 47 standard. See also availableLanguage. Supersedes language.",
+    "len(2)",
+    "inLanguage",
+    "countryCode",
+    "lang",
+    "gmd:LanguageCode",
+    "gmd:language",
+    "@codeListValue"
+  ],
+  "accessibilitySummary": [
+    "Text/URL",
+    "A human-readable summary of specific accessibility features or deficiencies, consistent with the other accessibility metadata but expressing subtleties such as short descriptions are present but long descriptions will be needed for non-visual users or short descriptions are present and no long descriptions are needed.",
+    "len(10)",
+    "Access/ordering of data",
+    "gmd:accessConstraints",
+    "@codeList",
+    "accessUrl"
+  ],
+  "contact": [
+    "Organization/Person",
+    "identification of, and means of communicating with, person(s) and organisation(s) with responsibility for maintaining the resource",
+    "len(5)",
+    "contact",
+    "Point of contact",
+    "gmd:CI_ResponsibleParty",
+    "gco:CharacterString",
+    "responsibleOrganization",
+    "name",
+    "uri",
+    "website"
+  ],
+  "version": [
+    "Number/Text",
+    "The version of the dataset embodied by a specified resource.",
+    "len(1)",
+    "gmd:metadataStandardVersion",
+    "gco:CharacterString",
+    "bibliographic_citation"
+  ],
+  "temporalCoverage": [
+    "DateTime/Text",
+    "The temporal period that the dataset covers.",
+    "len(4)",
+    "gmd:temporalElement",
+    "temporalCoverageDisplay"
+  ],
+  "publisher": [
+    "Organization/Person",
+    "The publisher of the dataset.",
+    "len(2)",
+    "Data originator",
+    "distributor",
+    "gmd:organisationName",
+    "gco:CharacterString",
+    "station",
+    "org",
+    "name",
+    "label",
+    "submitter",
+    "name"
+  ],
+  "spatial": [
+    "Place",
+    "A digital representation of spatial information in the resource.",
+    "len(4)",
+    "locationCreated",
+    "spatialCoverage",
+    "contentLocation",
+    "gmd:EX_GeographicBoundingBox",
+    "gco:Decimal",
+    "coverageGeo",
+    "Sea regions"
+  ],
+  "license": [
+    "Text/URL",
+    "A license document that applies to this content, typically indicated by URL.",
+    "len(10)",
+    "accessUrl",
+    "dcterms:license"
+  ],
+  "citation": [
+    "Text",
+    "A citation or reference to another creative work, such as another publication, web page, scholarly article, etc.",
+    "len(5)",
+    "gmd:citation",
+    "gco:CharacterString",
+    "citationString",
+    "bibliographic_citation"
+  ],
+  "genre": [
+    "Text",
+    "The nature or genre of the resource.",
+    "len(5)",
+    "Discipline",
+    "gmd:topicCategory",
+    "gmd:MD_TopicCategoryCode",
+    "dwc:class",
+    "classification",
+    "name",
+    "url"
+  ],
+  "creator": [
+    "Organization/Person",
+    "The entity responsible for producing the resource.",
+    "len(5)",
+    "creator",
+    "name",
+    "label",
+    "uri",
+    "recordedBy"
+  ],
+  "modificationDate": [
+    "DateTime",
+    "Most recent date on which the item was changed, updated or modified.",
+    "len(4)",
+    "CDI-record last update",
+    "dateModified",
+    "dcterms:modified"
+  ],
+  "distribution": [
+    "URL",
+    "A downloadable form of this dataset, at a specific location, in a specific format.",
+    "Rule",
+    "distributionInfo",
+    "gmd:MD_Identifier",
+    "gco:CharacterString",
+    "accessUrl",
+    "dcterms:identifier"
+  ],
+  "image": [
+    "ImageObject/URL",
+    "An image of the item. This can be a URL or a fully described ImageObject.",
+    "Rule",
+    "gmd:graphicOverview",
+    "gco:CharacterString",
+    "pictures"
+  ],
+  "thumbnailUrl": [
+    "URL",
+    "A thumbnail image relevant to the Thing.",
+    "Rule",
+    "gmd:graphicOverview",
+    "gco:CharacterString",
+    "markerIcon",
+    "icon"
+  ],
+  "headline": [
+    "Text",
+    "Headline of the article.",
+    "Rule",
+    "gmd:citation",
+    "source_database"
+  ],
+  "abstract": [
+    "Text",
+    "An abstract is a short description that summarizes a dataset.",
+    "Rule",
+    "Abstract",
+    "gmd:abstract",
+    "gco:CharacterString"
+  ],
+  "theme": [
+    "Text",
+    "A main category of the resource. A resource can have multiple themes.",
+    "Rule",
+    "GEMET-INSPIRE themes",
+    "gmd:thesaurusName",
+    "theme",
+    "label",
+    "gbif:species"
+  ],
+  "dateCreated": [
+    "Date/DateTime",
+    "The date on which the dataset was created or the item was added to a DataFeed.",
+    "earliest",
+    "gmd:CI_Date",
+    "gco:Date",
+    "labelingDate",
+    "dwc:geodeticDatum",
+    "dwc:year",
+    "Start date"
+  ],
+  "creditText": [
+    "Text",
+    "Text that can be used to credit person(s) and/or organization(s) associated with a published datatset.",
+    "Rule",
+    "sample"
+  ],
+  "datePublished": [
+    "Date/DateTime",
+    "Date of first broadcast/publication.",
+    "Rule",
+    "gmd:dateStamp",
+    "gco:DateTime",
+    "dateTime",
+    "gbif:lastParsed"
+  ],
+  "producer": [
+    "Organization/Person",
+    "The person or organization who produced the work (e.g. music album, movie, tv/radio series etc.).",
+    "Rule",
+    "sample"
+  ],
+  "author": [
+    "Organization/Person",
+    "The author of this content or rating. Please note that author is special in that HTML 5 provides a special mechanism for indicating authorship via the rel tag. That is equivalent to this and may be used interchangeably.",
+    "Rule",
+    "authors",
+    "firstName",
+    "lastName",
+    "uri",
+    "author"
+  ],
+  "spatialCoverage": [
+    "Place",
+    "The spatialCoverage of a dataset indicates the place(s) which are the focus of the content. It is a subproperty of contentLocation intended primarily for more technical and detailed materials. For example with a Dataset, it indicates areas that the dataset describes: a dataset of New York weather would have spatialCoverage which was the place: the state of New York.",
+    "lng/lat",
+    "gmd:geographicElement",
+    "gco:Decimal",
+    "coverageGeo",
+    "coverage",
+    "coordinates",
+    "Sea regions"
+  ],
+  "url": [
+    "URL",
+    "URL of the item.",
+    "Rule",
+    "gmd:identifier",
+    "gco:CharacterString",
+    "accessUrl",
+    "physicalSpecimenId"
+  ],
+  "sponsor": [
+    "Organization/Person",
+    "A person or organization that supports a thing through a pledge, promise, or financial contribution. e.g. a sponsor of a Medical Study or a corporate sponsor of an event.",
+    "Rule",
+    "sample"
+  ],
+  "size": [
+    "DefinedTerm/QuantitativeValue/SizeSpecification/Text",
+    "A standardized size of a product or creative work, specified either through a simple textual string (for example 'XL', '32Wx34L'), a QuantitativeValue with a unitCode, or a comprehensive and structured SizeSpecification; in other cases, the width, height, depth and weight properties may be more applicable.",
+    "Rule",
+    "size"
+  ],
+  "sameAs": [
+    "URL",
+    "URL of a reference Web page that unambiguously indicates the item's identity. E.g. the URL of the item's Wikipedia page, Wikidata entry, or official website.",
+    "Rule",
+    "wikidata",
+    "wikipedia",
+    "wikidataPageURL"
+  ],
+  "publication": [
+    "PublicationEvent",
+    "A publication event associated with the item.",
+    "Rule",
+    "sample"
+  ],
+  "provider": [
+    "place/Organization/Person",
+    "The service provider, service operator, or service performer; the goods producer. Another party (a seller) may offer those services or goods on behalf of the provider. A provider may also serve as the seller. Supersedes carrier.",
+    "Rule",
+    "sample"
+  ],
+  "position": [
+    "Integer/Text",
+    "The position of an item in a series or sequence of items.",
+    "Rule",
+    "sample"
+  ],
+  "name": [
+    "Text",
+    "The name of the item.",
+    "Rule",
+    "Data set name",
+    "fileName",
+    "gmd:fileIdentifier",
+    "gco:CharacterString",
+    "scientificName",
+    "gbif:acceptedScientificName",
+    "dwc:datasetName",
+    "gbif:genericName"
+  ],
+  "measurementTechnique": [
+    "Text/URL",
+    "A technique or technology used in a Dataset (or DataDownload, DataCatalog), corresponding to the method used for measuring the corresponding variable(s) (described using variableMeasured).",
+    "Rule",
+    "Instrument/gear type",
+    "instrument",
+    "label",
+    "uri"
+  ],
+  "material": [
+    "Product/Text/URL",
+    "A material that something is made from, e.g. leather, wool, cotton, paper.",
+    "Rule",
+    "sample"
+  ],
+  "maintainer": [
+    "Organization/Person",
+    "A maintainer of a Dataset, software package (SoftwareApplication), or other Project. A maintainer is a Person or Organization that manages contributions to, and/or publication of, some (typically complex) artifact.",
+    "Rule",
+    "gmd:resourceMaintenance"
+  ],
+  "locationCreated": [
+    "Place",
+    "The location where the dataset was created.",
+    "Rule",
+    "gmd:EX_Extent",
+    "gco:CharacterString",
+    "coverage",
+    "coordinates",
+    "label",
+    "country"
+  ],
+  "issn": [
+    "Text",
+    "The International Standard Serial Number (ISSN) that identifies this serial publication. You can repeat this property to identify different formats of, or the linking ISSN (ISSN-L) for, this serial publication.",
+    "Rule",
+    "bibliographic_citation"
+  ],
+  "isPartOf": [
+    "Text/URL",
+    "Indicates an item or dataset that this item, or CreativeWork (in some sense), is part of.Inverse property: hasPart",
+    "Rule",
+    "inSeries",
+    "gmd:parentIdentifier",
+    "parentCollections"
+  ],
+  "isBasedOn": [
+    "Product/URL",
+    "A resource from which this work is derived or from which it is a modification or adaption. Supersedes isBasedOnUrl.",
+    "Rule",
+    "dwc:basisOfRecord"
+  ],
+  "isAccessibleForFree": [
+    "Boolean",
+    "A flag to signal that the item, event, or place is accessible for free. Supersedes free.",
+    "Rule",
+    "gmd:accessConstraints"
+  ],
+  "includedInDataCatalog": [
+    "DataCatalog",
+    "A data catalog which contains this dataset. Supersedes includedDataCatalog, catalog. Inverse property: dataset",
+    "Rule",
+    "catalogNumber"
+  ],
+  "editor": [
+    "Person",
+    "Specifies the Person who edited the dataset.",
+    "Rule",
+    "sample"
+  ],
+  "editEIDR": [
+    "Text/URL",
+    "An EIDR (Entertainment Identifier Registry) identifier representing a specific edit / edition for a work of film or television.",
+    "Rule",
+    "sample"
+  ],
+  "copyrightYear": [
+    "Date/Number",
+    "The year during which the claimed copyright for the dataset was first asserted.",
+    "Rule",
+    "sample"
+  ],
+  "copyrightNotice": [
+    "Text",
+    "Text of a notice appropriate for describing the copyright aspects of this Creative Work, ideally indicating the owner of the copyright for the Work.",
+    "Rule",
+    "sample"
+  ],
+  "copyrightHolder": [
+    "Organization/Person",
+    "The party holding the legal copyright to the dataset.",
+    "Rule",
+    "gmd:organisationName",
+    "gco:CharacterString",
+    "citationBibTex",
+    "dcterms:rightsHolder"
+  ],
+  "contributor": [
+    "Organization/Person",
+    "A secondary contributor to the dataset or Event.",
+    "Rule",
+    "gmd:organisationName",
+    "gco:CharacterString"
+  ],
+  "contentReferenceTime": [
+    "DateTime",
+    "The specific time described by a creative work, for works (e.g. articles, video objects etc.) that emphasise a particular moment within an Event.",
+    "Rule",
+    "gml:TimePeriod",
+    "gml:beginPosition",
+    "interval",
+    "start",
+    "stop",
+    "dwc:eventDate"
+  ],
+  "contentLocation": [
+    "Place",
+    "The location depicted or described in the content. For example, the location in a photograph or painting.",
+    "Rule",
+    "gmd:address",
+    "dwc:country"
+  ],
+  "character": [
+    "Person",
+    "Fictional person connected with a creative work.",
+    "Rule",
+    "sample"
+  ],
+  "acquireLicensePage": [
+    "URL",
+    "Indicates a page documenting how licenses can be purchased or otherwise acquired, for the current item.",
+    "Rule",
+    "accessUrl",
+    "dcterms:license"
+  ],
+  "accessModeSufficient": [
+    "ItemList",
+    "A list of single or combined accessModes that are sufficient to understand all the intellectual content of a resource. Expected values include: auditory, tactile, textual, visual.",
+    "Rule",
+    "sample"
+  ],
+  "about": [
+    "Thing",
+    "The subject matter of the content.",
+    "Rule",
+    "gco:CharacterString",
+    "comments"
+  ],
+  "rights": [
+    "Text/URL",
+    "A statement that concerns all rights not addressed with dcterms:license or dcterms:accessRights, such as copyright statements.",
+    "Rule",
+    "accessRights",
+    "accessUrl"
+  ],
+  "relation": [
+    "Text",
+    "A resource with an unspecified relationship to the cataloged item.",
+    "Rule",
+    "sample"
+  ],
+  "qualifiedRelation": [
+    "URL",
+    "Link to a description of a relationship with another resource",
+    "Rule",
+    "sample"
+  ],
+  "qualifiedAttribution": [
+    "URL",
+    "Link to an Agent having some form of responsibility for the resource",
+    "Rule",
+    "quantityKind",
+    "uri"
+  ],
+  "previousVersion": [
+    "Text/URL",
+    "The previous version of a resource in a lineage [PAV].",
+    "Rule",
+    "PAV",
+    "previousVersion"
+  ],
+  "nextVersion": [
+  "Text/URL",
+  "The next version of a resource in a lineage.",
+  "Rule",
+  "nextVersion"
+],
+  "landingPage": [
+    "URL",
+    "A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset, its distributions and/or additional information.",
+    "Rule",
+    "gmd:identifier",
+    "url"
+  ],
+  "isReferencedBy": [
+    "URL",
+    "A related resource, such as a publication, that references, cites, or otherwise points to the cataloged resource.",
+    "Rule",
+    "citationRis",
+    "bibliographic_citation"
+  ],
+  "hasVersion": [
+    "Boolean",
+    "This resource has a more specific, versioned resource [PAV].",
+    "Rule",
+    "gmd:metadataStandardVersion"
+  ],
+  "hasPolicy": [
+    "Boolean",
+    "An ODRL conformant policy expressing the rights associated with the resource.",
+    "Rule",
+    "sample"
+  ],
+  "hasCurrentVersion": [
+    "Boolean",
+    "This resource has a more specific, versioned resource with equivalent content [PAV].",
+    "Rule",
+    "gmd:metadataStandardVersion"
+  ],
+  "useConstraints": [
+    "URL/Text",
+    "constraints applied to assure the protection of privacy or intellectual property, and any special restrictions or limitations or warnings on using the resource or metadata",
+    "Rule",
+    "Access restriction",
+    "gmd:useConstraints",
+    "@codeList"
+  ],
+  "status": [
+    "URL/Text",
+    "status of the resource(s)",
+    "Rule",
+    "dwc:taxonomicStatus"
+  ],
+  "spatialRepresentationType": [
+    "Text",
+    "method used to spatially represent geographic information",
+    "Rule",
+    "sample"
+  ],
+  "spatialRepresentationInfo": [
+    "Text",
+    "digital representation of spatial information in the resource",
+    "Rule",
+    "sample"
+  ],
+  "scope": [
+    "Text",
+    "type of resource and/or extent to which the lineage information applies",
+    "Rule",
+    "Lineage",
+    "gmd:lineage",
+    "gco:CharacterString"
+  ],
+  "purpose": [
+    "Text",
+    "A summary of the intentions with which the resource(s) was developed",
+    "Rule",
+    "sample"
+  ],
+  "otherLocale": [
+    "Text/url",
+    "alternative localised language(s) and character set(s) used within resource",
+    "Rule",
+    "gmd:locale",
+    "@id",
+    "gmd:LanguageCode",
+    "@codeList"
+  ],
+  "metadataProfile": [
+    "Text/URL",
+    "citation for the profile(s) of the metadata standard to which the metadata conforms . NOTE: Metadata profile citations should include an identifier",
+    "Rule",
+    "gmd:metadataStandardName",
+    "metadata"
+  ],
+  "metadataLinkage": [
+    "Text/URL",
+    "online location where metadata is available",
+    "Rule",
+    "sample"
+  ],
+  "metadataIdentifier": [
+    "Text",
+    "unique identifier for this metadata record",
+    "Rule",
+    "gmd:MD_Identifier",
+    "gco:CharacterString",
+    "@xlink:href"
+  ],
+  "environmentDescription": [
+    "Text",
+    "description of the resource in the producer’s processing environment, including items such as the software, the computer operating system, file name, and size",
+    "Rule",
+    "sample"
+  ],
+  "distributionInfo": [
+    "Text/URL",
+    "information about the distributor of and options for obtaining the resource(s)",
+    "Rule",
+    "Data custodian",
+    "gmd:distributionInfo",
+    "gco:CharacterString",
+    "gmd:URL",
+    "specificInfo",
+    "res",
+    "label",
+    "uri",
+    "references",
+    "source"
+  ],
+  "dataQualityInfo": [
+    "Text",
+    "provides overall assessment of quality of a resource(s)",
+    "Rule",
+    "Quality info",
+    "Name",
+    "Date",
+    "Comment",
+    "gmd:dataQualityInfo",
+    "gco:CharacterString"
+  ],
+  "contentInfo": [
+    "Text",
+    "information about feature and coverage characteristics",
+    "Rule",
+    "gmd:referenceSystemInfo",
+    "gco:CharacterString",
+    "gmd:identificationInfo",
+    "documentation",
+    "productionInfo",
+    "name",
+    "label",
+    "uri"
+  ],
+  "ResearchInfrastructure": [
+    "DefinedTerm",
+    "The name of the research infrastructure",
+    "Rule",
+    "--LanguageModelExtraction--"
+  ],
+  "EssentialVariables": [
+    "DefinedTerm",
+    "EssentialVariables used to list relevant essential variables. Multiple entries in an essential variables list are typically delimited by commas.",
+    "array(comma)",
+    "--LanguageModelExtraction--"
+  ],
+  "potentialTopics": [
+    "DefinedTerm",
+    "The potential topics of the dataset",
+    "Rule",
+    "--LanguageModelExtraction--"
+  ]
+}

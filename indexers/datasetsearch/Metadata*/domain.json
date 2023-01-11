@@ -1,0 +1,7 @@
+{
+  "ICOS": ["atmosphere"],
+  "SeaDataNet": ["oceanography"],
+  "DiSSCo": ["biodiversity"],
+  "AnaEE": ["biodiversity"],
+  "LifeWatch": ["biodiversity"]
+}

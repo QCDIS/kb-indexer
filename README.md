@@ -15,10 +15,12 @@ cd indexers
 python -m notebooksearch.notebook_indexing
 ```
 
-Install language pipeline for web indexer
+Install language pipeline for web and dataset indexers
 
 ```shell
-python -m spacy download en
+python -m spacy download en 
+python -m spacy download en_core_web_md
+python -m nltk.downloader omw-1.4
 ```
 
 Run web indexer
@@ -26,4 +28,11 @@ Run web indexer
 ```shell
 cd indexers
 python -m websearch.adhoc_crawler
+```
+
+Run dataset indexer
+
+```shell
+cd indexers
+python -m datasetsearch.adhoc_DatasetRecords
 ```
