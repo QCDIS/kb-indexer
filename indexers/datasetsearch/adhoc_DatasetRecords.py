@@ -9,7 +9,7 @@ import os
 from urllib.parse import urlparse
 from datasetsearch.WebCrawler import Crawler
 #from LanguageDetection import LangaugePrediction
-from datasetsearch.Synonyms import getSynonyms
+from datasetsearch import Synonyms
 from os import walk
 from bs4 import BeautifulSoup
 import requests
@@ -45,6 +45,8 @@ nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
 nltk.data.path.append(nltk_data_dir)
 nltk.download('wordnet', download_dir=nltk_data_dir)
 nltk.download('stopwords', download_dir=nltk_data_dir)
+
+Synonyms.download_nltk_dependencies_if_needed(nltk_data_dir)
 
 #----------------------------------------------------------------------------------------
 EnglishTerm = enchant.Dict("en_US")
@@ -292,7 +294,7 @@ def listToString(s):
 #----------------------------------------------------------------------------------------
 def getSimilarEssentialVariables(essentialVariables, topics):
     lstEssentialVariables=[]
-    lsttopics= [*getSynonyms(topics), *topics]
+    lsttopics= [*Synonyms.getSynonyms(topics), *topics]
     for variable in essentialVariables:
         for topic in lsttopics:
             w1=spacy_nlp(topic.lower())
