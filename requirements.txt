@@ -1,0 +1,4 @@
+elasticsearch==7.17.6
+elasticsearch-dsl==7.4.0
+python-dotenv==0.21.0
+pandas==1.5.0
