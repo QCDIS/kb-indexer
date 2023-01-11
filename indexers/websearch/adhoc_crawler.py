@@ -467,9 +467,23 @@ def envriCrawler():
     #url="http://mediawiki.envri.eu/index.php/Special:WhatLinksHere/%C3%83%C2%90%C3%82%C2%9C%C3%83%C2%90%C3%82%C2%BE%C3%83%C2%90%C3%82%C2%B1%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%91%C3%82%C2%8C%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%91%C3%82%C2%8F_%C3%83%C2%90%C3%82%C2%B2%C3%83%C2%90%C3%82%C2%B5%C3%83%C2%91%C3%82%C2%80%C3%83%C2%91%C3%82%C2%81%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%91%C3%82%C2%8F_%C3%83%C2%90%C3%82%C2%BE%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%B9%C3%83%C2%90%C3%82%C2%BD_%C3%83%C2%90%C3%82%C2%BA%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%B7%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%BE_%C3%83%C2%90%C3%82%C2%92%C3%83%C2%91%C3%82%C2%83%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%90%C3%82%C2%BA%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%BD"
     #print(validators.url(url))
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+def index_all_research_infrastructures():
+    for IR in ResearchInfrastructures:
+        internal_urls.clear()
+        external_urls.clear()
+        permitted_urls.clear()
+        total_urls_visited=0
+
+        url= ResearchInfrastructures[IR]['url']
+        indexWebsite(url)
+
+
 if __name__ == "__main__":
     #printResults()
-    envriCrawler()
+    # envriCrawler()
+    index_all_research_infrastructures()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
