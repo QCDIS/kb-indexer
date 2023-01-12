@@ -64,6 +64,10 @@ class KaggleNotebookCrawler:
             - buddhiniw_breast-cancer-prediction.ipynb
             - buddhiniw_breast-cancer-prediction.json
         '''
+        if pd.isna(kernel_ref):
+            print(f'[*NO REF] {kernel_ref}')
+            return False
+
         download_path = self.KERNEL_DOWNLOAD_PATH
         file_name = os.path.dirname(kernel_ref) + '_' + os.path.basename(kernel_ref)
 
