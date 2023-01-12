@@ -12,6 +12,8 @@ Running notebook indexing
 
 ```shell
 cd indexers
+python -m notebooksearch.notebook_crawling  # saves notebooks to Raw_notebooks/
+python -m notebooksearch.notebook_preprocessing  # creates CSVs in Notebooks/
 python -m notebooksearch.notebook_indexing
 ```
 
