@@ -5,7 +5,7 @@ import time
 
 import pandas as pd
 
-from notebooksearch import utils  # FIXME
+from notebooksearch import utils
 from elasticsearch import Elasticsearch
 
 
