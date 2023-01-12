@@ -94,12 +94,92 @@ class NotebookContents:
         return list2str_no_space(code)
 
 
-    def extract_contents(self, notebook_json): 
+    def extract_contents(self, notebook_json):
      # Extract text from MD cells
         md_text = self.extract_text_from_md(notebook_json)
         result = {'md_text': md_text}
         return result
 
+
+class NotebookStatistics:
+    ''' The class NotebookStatistics provides the statistical data and methods of computing those statistics given a series of notebooks.
+        Attributes:
+            - language: list.
+            - num_code_cells: list. number of code cells
+            - num_md_cells: list. number of markdown cells
+            - len_md_text: list. text length in markdown cells
+
+        Methods:
+            - cal_language(self, notebook)
+            - cal_num_cells(self, notebook)
+            - cal_statistics(self, notebooks)
+    '''
+
+    def __init__(self):
+        self.language = []
+        self.num_code_cells = []
+        self.num_md_cells = []
+        self.len_md_text = []
+
+    def cal_language(self, notebook_json):
+        ''' Extract the language information of the given notebook
+            Args:
+                - notebook : dict. {"id": str, "contents": str}
+            Return:
+                - language: str. 'others' if there is no information about language
+        '''
+        if "metadata" not in notebook_json.keys():
+            lang = 'others'
+
+        elif 'language_info' not in notebook_json["metadata"].keys():
+            lang = 'others'
+
+        else:
+            lang = notebook_json['metadata']['language_info']['name']
+        return lang
+
+    def cal_num_cells(self, notebook_json):
+        ''' Calculate the number of code cells of the given notebook
+            Args:
+                - notebook : dict. {"id": str, "contents": str}
+            Return:
+                - num_code_cells: int. number of code cells
+                - num_md_cells: int. number of MD cells
+                - len_md_text: int. the number of lines of text in markdown cells of the given notebook
+        '''
+        num_code_cells = 0
+        num_md_cells = 0
+        len_md_text = 0
+
+        # Sanity check 1: check if notebook has cells
+        if "cells" in notebook_json.keys():
+            for cell in notebook_json["cells"]:
+                # Sanity check 2: check if cell_type is specified
+                if "cell_type" not in cell.keys():
+                    continue
+                elif cell["cell_type"] == "code":
+                    num_code_cells += 1
+                elif cell["cell_type"] == "markdown" and "source" in cell.keys():
+                    num_md_cells += 1
+                    len_md_text += len(cell["source"])
+
+        return num_code_cells, num_md_cells, len_md_text
+
+    def cal_statistics(self, notebook_json):
+        ''' Calculate all the statistics of the given notebooks
+            Args:
+                - notebooks : list of dict. Each element is a notebook
+        '''
+        language = self.cal_language(notebook_json)
+        num_code_cells, num_md_cells, len_md_text = self.cal_num_cells(notebook_json)
+        result = {
+            'language': language,
+            'num_cells': num_code_cells+num_md_cells,
+            'num_code_cells': num_code_cells,
+            'num_md_cells': num_md_cells,
+            'len_md_text': len_md_text,
+        }
+        return result
 
 
 class RawNotebookPreprocessor:
@@ -192,18 +272,51 @@ class RawNotebookPreprocessor:
         elif source_name=='Github': 
             return ' '
 
-    
-    def add_new_notebooks(self): 
-        ''' Add new raw notebooks to existent records. 
+    def add_new_features(self, source_name):
+        ''' Add new features extracted from notebook contents to existent records.
+
+        Args:
+            - df_features: pandas.DataFrame.
         '''
-        pass
+        output_dir = self.output_path
+        df_features = self.extract_new_features(source_name)
+        # df_notebooks = pd.read_csv(os.path.join(output_dir, source_name + '_raw_notebooks.csv'))
+        df_metadata = pd.read_csv(os.path.join(output_dir, source_name + '_preprocessed_notebooks.csv'))
+
+        # Add features to preprocessed notebooks
+        df_metadata = df_metadata.merge(df_features, how='left', on='docid')
+
+        # Save updated metadata file
+        metadata_file = os.path.join(output_dir, source_name + '_updated_preprocessed_notebooks.csv')
+
+        print(f'Saving updated notebook metadata to: {metadata_file}\n')
+        df_metadata.to_csv(metadata_file, index=False)
+        return True
+
+    def extract_new_features(self, source_name):
+        ''' Extract new features ['language', 'num_code_cells', 'num_md_cells', 'len_md_text']
+        '''
+        output_dir = self.output_path
+        df_notebooks = pd.read_csv(os.path.join(output_dir, source_name + '_raw_notebooks.csv'))
+        # Compute the statistics of notebooks
+        statistics = NotebookStatistics()
+        def extract_new_contents(notebook_str):
+            notebook_json = json.loads(notebook_str)
+            return statistics.cal_statistics(notebook_json)
+        features = list(df_notebooks['notebook_source_file'].apply(extract_new_contents))
+
+        df_features = pd.DataFrame.from_dict(features)
+        df_features['docid'] = df_notebooks['docid']
+        return df_features
 
     
 def main():
     input_path = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks')
     output_path = os.path.join(os.getcwd(), 'notebooksearch/Notebooks')
+    os.makedirs(output_path, exist_ok=True)
     preprocessor = RawNotebookPreprocessor(input_path=input_path, output_path=output_path)
     preprocessor.dump_raw_notebooks(source_name='Kaggle')
+    preprocessor.add_new_features(source_name='Kaggle')
 
 
 if __name__ == '__main__': 

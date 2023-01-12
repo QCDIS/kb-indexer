@@ -242,6 +242,15 @@ def main():
     KAGGLE_SEARCH_LOG_FILE = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/logs/kaggle_search_log.csv')
     QUERY_FILE = os.path.join(os.getcwd(), 'notebooksearch/Queries/kaggle_crawler_queries.csv')
 
+    os.makedirs(
+        os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/Kaggle'),
+        exist_ok=True,
+        )
+    os.makedirs(
+        os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/logs'),
+        exist_ok=True,
+        )
+
     # Read queries
     df_queries = pd.read_csv(QUERY_FILE)
     # queries = ['wsi']

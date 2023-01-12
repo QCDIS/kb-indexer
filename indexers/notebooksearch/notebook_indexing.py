@@ -21,12 +21,13 @@ class ElasticsearchIndexer():
         - source_name: 'Kaggle' or 'Github'. The repository source for notebooks
         - doc_type: 'preprocessed' or 'raw'. The document type for notebooks
     '''
-    def __init__(self, es: Elasticsearch, source_name: str, doc_type:str, index_name: str, notebook_path: str):
+    def __init__(self, es: Elasticsearch, source_name: str, doc_type:str, index_name:str, notebook_path:str, source_file_name:str):
         self.es = es
         self.index_name = index_name
         self.notebook_path = notebook_path
         self.source_name = source_name
         self.doc_type = doc_type
+        self.source_file_name = source_file_name
 
     def generate_index_files(self) -> list:
         ''' Generate a list of index files to be indexed by Elasticsearch.
@@ -59,16 +60,18 @@ class ElasticsearchIndexer():
                         indexfiles.append(newRecord)
 
             elif self.source_name == 'Kaggle':
-                root = self.notebook_path
-                df_notebooks = pd.read_csv(os.path.join(root, self.source_name+"_preprocessed_notebooks.csv"))
+                # ['source_id', 'name', 'file_name', 'html_url', 'description', 'source', 'docid', 'language',
+                # 'num_cells', 'num_code_cells', 'num_md_cells', 'len_md_text']
+                df_notebooks = pd.read_csv(os.path.join(self.notebook_path, self.source_file_name))
                 indexfiles =  df_notebooks.to_dict('records')
             else:
                 print("Notebook source is unknown, please specify a scheme.")
 
         # Index raw notebooks
+        # ['docid', 'source_id', 'name', 'file_name', 'source', 'notebook_source_file']
         elif self.doc_type == 'raw':
             root = self.notebook_path
-            df_notebooks = pd.read_csv(os.path.join(root, self.source_name+"_raw_notebooks.csv"))
+            df_notebooks = pd.read_csv(os.path.join(self.notebook_path, self.source_file_name))
             indexfiles =  df_notebooks.to_dict('records')
         else:
             print("Notebook type is unknown, please specify a doc_type.")
@@ -143,7 +146,13 @@ def index_kaggle_notebooks(reindex=False):
     # github_notebook_path = os.path.join(os.getcwd(), 'notebooksearch', 'Github Notebooks')
     # indexer = ElasticsearchIndexer(es, "Github", "github_notebooks", github_notebook_path)
     kaggle_notebook_path = os.path.join(os.getcwd(), 'notebooksearch', 'Notebooks')
-    indexer = ElasticsearchIndexer(es=es, source_name="Kaggle", doc_type="preprocessed", index_name="kaggle_notebooks", notebook_path=kaggle_notebook_path)
+    indexer = ElasticsearchIndexer(
+        es=es,
+        source_name="Kaggle",
+        doc_type="preprocessed",
+        index_name="kaggle_notebooks",
+        notebook_path=kaggle_notebook_path,
+        source_file_name="Kaggle_updated_preprocessed_notebooks.csv")
     indexer.index_notebooks(reindex=reindex)
 
 
@@ -163,7 +172,13 @@ def index_raw_notebooks(reindex=False):
     # github_notebook_path = os.path.join(os.getcwd(), 'notebooksearch', 'Github Notebooks')
     # indexer = ElasticsearchIndexer(es, "Github", "github_notebooks", github_notebook_path)
     raw_notebook_path = os.path.join(os.getcwd(), 'notebooksearch', 'Notebooks')
-    indexer = ElasticsearchIndexer(es=es, source_name="Kaggle", doc_type="raw", index_name="kaggle_raw_notebooks", notebook_path=raw_notebook_path)
+    indexer = ElasticsearchIndexer(
+        es=es,
+        source_name="Kaggle",
+        doc_type="raw",
+        index_name="kaggle_raw_notebooks",
+        notebook_path=raw_notebook_path,
+        source_file_name="Kaggle_raw_notebooks.csv")
     indexer.index_notebooks(reindex=reindex)
 
 def main():
