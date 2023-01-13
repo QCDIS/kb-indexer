@@ -189,41 +189,55 @@ class RawNotebookPreprocessor:
         - input_path: The path of a folder under which the .ipynb files reside. 
         - output_path: The path of a folder where the .csv files will be placed. 
     '''
-    def __init__(self, input_path:str, output_path:str) -> bool: 
-        self.input_path = input_path
-        self.output_path = output_path
-    # def generate_docid(self, notebooks): 
-    #     notebooks['docid'] = range(len(notebooks))
+    def __init__(self, source_name: str):
+        self.source_name = source_name
+        self.directories = {
+            'input_notebooks': f'data/{self.source_name}/raw_notebooks/',
+            'input_metadata': f'data/{self.source_name}/notebooks_metadata/',
+            'output': f'data/{self.source_name}/notebook_lists/',
+            }
+        self._add_abs_path_to_directories()
+        self._make_directories()
+        self.files = {
+            'raw_notebooks': os.path.join(self.directories['output'],
+                                          'raw_notebooks.csv'),
+            'processed_notebooks': os.path.join(self.directories['output'],
+                                                'processed_notebooks.csv'),
+            'updated_processed_notebooks': os.path.join(
+                self.directories['output'], 'updated_processed_notebooks.csv'),
+            }
 
-    # def docid2filename(self, source_name:str, docid:str):
-    #     if source_name == 'Kaggle': 
-    #         pass 
+    def _add_abs_path_to_directories(self):
+        for k, v in self.directories.items():
+            self.directories[k] = os.path.join(os.path.dirname(__file__), v)
 
-    # def filename2docid(self): 
-    #     pass
+    def _make_directories(self):
+        for d in self.directories.values():
+            os.makedirs(d, exist_ok=True)
 
-    def dump_raw_notebooks(self, source_name:str):
+    def dump_raw_notebooks(self):
         ''' Dump raw notebooks to a .csv file. 
 
         And keep a record of notebook metadata in another .csv file
         '''
-        root = os.path.join(self.input_path, source_name)
         contents = NotebookContents()
         raw_notebooks = []
         # Go through all the .ipynb file and store the contents in one single .csv file. 
-        for path, _, files in os.walk(root):
+        for path, _, files in os.walk(self.directories['input_notebooks']):
             for name in files:
                 if name.endswith('.ipynb'): 
-                    file_path = os.path.join(path, name)
+                    file_path = os.path.join(
+                        self.directories['input_notebooks'], name)
                     notebook_json = utils.read_json_file(file_path)
                     notebook = json.dumps(notebook_json)
 
                     # Read metadata
-                    metadata_path = os.path.join(path, name[:-6]+'.json')
+                    metadata_path = os.path.join(
+                        self.directories['input_metadata'], name[:-6]+'.json')
                     metadata = utils.read_json_file(metadata_path)
 
                     # Get HTML URL
-                    html_url = self.get_html_url(source_name='Kaggle', source_id=metadata['id'])
+                    html_url = self.get_html_url(source_id=metadata['id'])
 
                     # Extract md_text from the notebook contents
                     try: 
@@ -238,7 +252,7 @@ class RawNotebookPreprocessor:
                         "file_name": name, 
                         "html_url": html_url, 
                         "description": extracted_contents['md_text'], 
-                        "source": source_name, 
+                        "source": self.source_name,
                         "notebook_source_file": notebook
                         }
                     raw_notebooks.append(new_record)
@@ -248,16 +262,15 @@ class RawNotebookPreprocessor:
         # Assign `docid` to each notebook
         df_raw_notebooks = pd.DataFrame.from_dict(raw_notebooks)
         df_raw_notebooks['docid'] = range(len(df_raw_notebooks))
-        df_raw_notebooks['docid'] = df_raw_notebooks['docid'].apply(lambda x: source_name + str(x))
+        df_raw_notebooks['docid'] = df_raw_notebooks['docid'].apply(lambda x: self.source_name + str(x))
         print(f'Number of raw notebooks: {len(df_raw_notebooks)}\n')
 
         df_metadata = df_raw_notebooks.drop(columns=['notebook_source_file'])
         df_raw_notebooks = df_raw_notebooks[['docid', 'source_id', 'name', 'file_name', 'source', 'notebook_source_file']]
 
         # Save the resulting files
-        output_dir = self.output_path
-        notebook_file = os.path.join(output_dir, source_name + '_raw_notebooks.csv')
-        metadata_file = os.path.join(output_dir, source_name + '_preprocessed_notebooks.csv')
+        notebook_file = self.files['raw_notebooks']
+        metadata_file = self.files['processed_notebooks']
 
         print(f'Saving raw notebooks to: {notebook_file}\n')
         df_raw_notebooks.to_csv(notebook_file, index=False)
@@ -266,28 +279,29 @@ class RawNotebookPreprocessor:
         df_metadata.to_csv(metadata_file, index=False)
 
 
-    def get_html_url(self, source_name, source_id):
-        if source_name=='Kaggle': 
+    def get_html_url(self, source_id):
+        if self.source_name =='Kaggle':
             return ("https://www.kaggle.com/code/" + source_id)
-        elif source_name=='Github': 
-            return ' '
+        elif self.source_name =='Github':
+            return ' '  # TODO
+        else:
+            raise ValueError
 
-    def add_new_features(self, source_name):
+    def add_new_features(self):
         ''' Add new features extracted from notebook contents to existent records.
 
         Args:
             - df_features: pandas.DataFrame.
         '''
-        output_dir = self.output_path
-        df_features = self.extract_new_features(source_name)
+        df_features = self.extract_new_features(self.source_name)
         # df_notebooks = pd.read_csv(os.path.join(output_dir, source_name + '_raw_notebooks.csv'))
-        df_metadata = pd.read_csv(os.path.join(output_dir, source_name + '_preprocessed_notebooks.csv'))
+        df_metadata = pd.read_csv(self.files['processed_notebooks'])
 
         # Add features to preprocessed notebooks
         df_metadata = df_metadata.merge(df_features, how='left', on='docid')
 
         # Save updated metadata file
-        metadata_file = os.path.join(output_dir, source_name + '_updated_preprocessed_notebooks.csv')
+        metadata_file = self.files['updated_processed_notebooks']
 
         print(f'Saving updated notebook metadata to: {metadata_file}\n')
         df_metadata.to_csv(metadata_file, index=False)
@@ -296,8 +310,7 @@ class RawNotebookPreprocessor:
     def extract_new_features(self, source_name):
         ''' Extract new features ['language', 'num_code_cells', 'num_md_cells', 'len_md_text']
         '''
-        output_dir = self.output_path
-        df_notebooks = pd.read_csv(os.path.join(output_dir, source_name + '_raw_notebooks.csv'))
+        df_notebooks = pd.read_csv(self.files['raw_notebooks'])
         # Compute the statistics of notebooks
         statistics = NotebookStatistics()
         def extract_new_contents(notebook_str):
@@ -309,14 +322,11 @@ class RawNotebookPreprocessor:
         df_features['docid'] = df_notebooks['docid']
         return df_features
 
-    
+
 def main():
-    input_path = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks')
-    output_path = os.path.join(os.getcwd(), 'notebooksearch/Notebooks')
-    os.makedirs(output_path, exist_ok=True)
-    preprocessor = RawNotebookPreprocessor(input_path=input_path, output_path=output_path)
-    preprocessor.dump_raw_notebooks(source_name='Kaggle')
-    preprocessor.add_new_features(source_name='Kaggle')
+    preprocessor = RawNotebookPreprocessor('Kaggle')
+    preprocessor.dump_raw_notebooks()
+    preprocessor.add_new_features()
 
 
 if __name__ == '__main__': 

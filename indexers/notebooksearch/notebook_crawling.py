@@ -1,266 +1,299 @@
-import os 
+import os
 import pandas as pd
 import kaggle
 import time
 from datetime import timedelta
-from memory_profiler import profile
- 
-class NotebookCrawler: 
-    pass
+from typing import List
 
 
-class KaggleNotebookCrawler: 
-    METADATA_FILE_NAME = "kernel-metadata.json"
+class _NotebookCrawler:
 
-    def __init__(self, df_queries, KERNEL_DOWNLOAD_PATH, KAGGLE_DOWNLOAD_LOG_FILE, KAGGLE_SEARCH_LOG_FILE):
-        self.KERNEL_DOWNLOAD_PATH = KERNEL_DOWNLOAD_PATH
-        self.KAGGLE_DOWNLOAD_LOG_FILE = KAGGLE_DOWNLOAD_LOG_FILE
-        self.KAGGLE_SEARCH_LOG_FILE = KAGGLE_SEARCH_LOG_FILE
-        self.df_queries = df_queries    
+    source_name = str
 
-    def search_kernels(self, query, page_range): 
-        ''' Search Kaggle kernels using given query
-        '''
+    def __init__(self):
+        self.directories = {
+            'notebooks': f'data/{self.source_name}/raw_notebooks/',
+            'metadata': f'data/{self.source_name}/notebooks_metadata/',
+            'log': f'data/logs/',
+            }
+        self._add_abs_path_to_directories()
+        self._make_directories()
+        self.files = {
+            'search_log': os.path.join(self.directories['log'], 'search.csv'),
+            'download_log': os.path.join(
+                self.directories['log'], 'download.csv'
+                ),
+            }
+
+    def _add_abs_path_to_directories(self):
+        for k, v in self.directories.items():
+            self.directories[k] = os.path.join(os.path.dirname(__file__), v)
+
+    def _make_directories(self):
+        for d in self.directories.values():
+            os.makedirs(d, exist_ok=True)
+
+
+class KaggleNotebookCrawler(_NotebookCrawler):
+
+    source_name = 'Kaggle'
+
+    def search(self, query, page_range):
+        """ Search Kaggle kernels using given query
+        """
         kernels = []
-        for page in range(1, page_range+1): 
-            kernel_list = []
-            try: 
+        for page in range(1, page_range + 1):
+            try:
                 kernel_list = kaggle.api.kernels_list(search=query, page=page)
-                print(f'Crawling page {page}')                
-                if len(kernel_list) == 0: 
+                print(f'Crawling page {page}')
+                if len(kernel_list) == 0:
                     break
-                else: 
+                else:
                     kernels.extend(kernel_list)
             # Skip the pages that cause ApiException
-            except kaggle.rest.ApiException as e:  
-                # print(e)
+            except kaggle.rest.ApiException:
                 continue
 
         # Extract the `title` and the `ref` of returned Kaggle kernels
         results = []
         for kernel in kernels:
-            results.append({
-                'query': query, 
-                'title': kernel.title, 
-                'kernel_ref': kernel.ref})
-        
+            results.append(
+                {
+                    'query': query,
+                    'title': kernel.title,
+                    'kernel_ref': kernel.ref
+                    }
+                )
+
         print('\n')
         return pd.DataFrame(results)
 
-    def download_kernel(self, kernel_ref):
-        ''' Download the kernels together with the metadata file
+    def download(self, notebook_ref):
+        """ Download the kernels together with the metadata file
 
-        Args: 
-            - kernel_ref: the ID used by Kaggle to denote one notebook. 
-        
-        Return: 
-            - Boolean: Only True when the file is correctly downloaded or already exists. 
+        Args:
+            - notebook_ref: the ID used by Kaggle to denote one notebook.
+
+        Return:
+            - Boolean: Only True when the file is correctly downloaded or
+              already exists.
 
 
-        The notebook will be downloaded as 'dirname_basename' of `kernel_ref`. 
+        The notebook will be downloaded as 'dirname_basename' of
+        `notebook_ref`.
 
-        For example, given kernel_ref = 'buddhiniw/breast-cancer-prediction', 
-        there will be two files downloaded: 
+        For example, given kernel_ref = 'buddhiniw/breast-cancer-prediction',
+        there will be two files downloaded:
             - buddhiniw_breast-cancer-prediction.ipynb
             - buddhiniw_breast-cancer-prediction.json
-        '''
-        if pd.isna(kernel_ref):
-            print(f'[*NO REF] {kernel_ref}')
+        """
+        if pd.isna(notebook_ref):
+            print(f'[*NO REF] {notebook_ref}')
             return False
 
-        download_path = self.KERNEL_DOWNLOAD_PATH
-        file_name = os.path.dirname(kernel_ref) + '_' + os.path.basename(kernel_ref)
+        download_path = self.directories['notebooks']
+        file_name = os.path.dirname(notebook_ref) + '_' + os.path.basename(
+            notebook_ref
+            )
+        # kaggle.api.kernels_pall downloads the nb to
+        #  ('dl_notebook') and the metadata to
+        # /path/kernel-metadata.json ('dl_metadata').
+        files = {
+            # notebook downloaded by Kaggle API (/path/<filename>.ipynb)
+            'dl_notebook': os.path.join(
+                download_path, os.path.basename(notebook_ref)
+                ) + '.ipynb',
+            # metadata downloaded by Kaggle API (/path/<filename>.ipynb)
+            'dl_metadata': os.path.join(download_path, 'kernel-metadata.json'),
+            # notebook destination (/path/<username>_<filename>.ipynb)
+            'notebook': os.path.join(
+                self.directories['notebooks'], file_name + '.ipynb'),
+            # metadata destination (/path/<username>_<filename>.json)
+            'metadata': os.path.join(
+                self.directories['metadata'], file_name + '.json'),
+            }
 
         # Check if the file is already downloaded
-        if self.file_exists(file_name): 
-            print(f'[!!EXIST] {kernel_ref}')
-            return True    
-        try: 
-            kaggle.api.kernels_pull(kernel_ref, download_path, metadata=True)
-            print(f'[Pulling] {kernel_ref}')
-            
-            old_file_name = os.path.basename(kernel_ref)
-            if not self.file_exists(old_file_name): 
-                print(f'[***FAIL] {kernel_ref}')
-                old_metadata = os.path.join(download_path, self.METADATA_FILE_NAME)
+        if os.path.isfile(files['notebook']):
+            print(f'[!!EXIST] {notebook_ref}')
+            return True
+        try:
+            kaggle.api.kernels_pull(notebook_ref, download_path, metadata=True)
+            print(f'[Pulling] {notebook_ref}')
 
-                # It is very important to delete the metadata file, otherwise the following downloading will fail
-                os.remove(old_metadata)
+            if not os.path.isfile(files['dl_notebook']):
+                print(f'[***FAIL] {notebook_ref}')
+                # It is very important to delete the metadata file,
+                # otherwise the following downloading will fail
+                os.remove(files['dl_metadata'])
                 return False
 
             # Rename the notebook file
-            try: 
-                old_file = os.path.join(download_path, os.path.basename(kernel_ref)) + '.ipynb'
-                new_file = os.path.join(download_path, file_name) + '.ipynb'
-                os.rename(old_file, new_file)
-            except FileNotFoundError as err: 
+            try:
+                os.rename(files['dl_notebook'], files['notebook'])
+            except FileNotFoundError as err:
                 print("Exception: ", err)
                 return False
 
             # Rename the metadata file
-            try: 
-                old_metadata = os.path.join(download_path, self.METADATA_FILE_NAME)
-                new_metadata = os.path.join(download_path, file_name) + '.json'
-                os.rename(old_metadata, new_metadata)
+            try:
+                os.rename(files['dl_metadata'], files['metadata'])
             except FileNotFoundError as err:
                 print("Exception: ", err)
                 return False
-        except Exception as err: 
+        except Exception as err:
             print("Exception: ", err)
             return False
         return True
 
-    def file_exists(self, file_name): 
-        file_path = os.path.join(self.KERNEL_DOWNLOAD_PATH, file_name) + ".ipynb" 
-        if os.path.exists(file_path): 
-            return True
-        else: 
-            return False
-        
-    def has_results(kernel_list): 
-        if len(kernel_list) == 0:
-            return False
-        else: 
-            return True   
-    
-    # memory_profile decorator
-    @profile
-    def bulk_search(self, page_range): 
-        '''' Search for notebooks '''
-        df_queries = self.df_queries
+    def bulk_search(self, queries, page_range):
+        """' Search for notebooks """
         df_notebooks = pd.DataFrame()
         # Search notebooks for each query
         start = time.time()
-        for i, query in enumerate(df_queries['queries']): 
-            print(f'---------------- Query [{i+1}]: {query} ----------------')
-            # To save the memory, we write the searching results to disk for every 10 queries 
-            df_notebooks = pd.concat([df_notebooks, self.search_kernels(query, page_range)])
+        for i, query in enumerate(queries):
+            print(
+                f'---------------- Query [{i + 1}]: {query} ----------------'
+                )
+            # To save the memory, we write the searching results to disk for
+            # every 10 queries
+            df_notebooks = pd.concat(
+                [df_notebooks, self.search(query, page_range)]
+                )
             df_notebooks.drop_duplicates(inplace=True)
-            if (i+1)%10 == 0 or i+1 == len(df_queries): 
+            if (i + 1) % 10 == 0 or i + 1 == len(queries):
                 # Update notebook search logs
-                try: 
-                    search_logs = pd.read_csv(self.KAGGLE_SEARCH_LOG_FILE)
+                try:
+                    search_logs = pd.read_csv(self.files['search_log'])
                 except Exception as e:
-                    print(e) 
+                    print(e)
                     search_logs = pd.DataFrame(columns=df_notebooks.columns)
 
-                if df_notebooks.empty: 
+                if df_notebooks.empty:
                     search_all = search_logs
-                else: 
+                else:
                     search_all = search_logs.merge(df_notebooks, how='outer')
                 search_all.drop_duplicates(inplace=True)
-                search_all.to_csv(self.KAGGLE_SEARCH_LOG_FILE, index=False)
+                search_all.to_csv(self.files['search_log'], index=False)
                 end = time.time()
-                print(f'>>>>> Saving {len(df_notebooks)} searching results to disk...')
-                print(f'>>>>> Time elapsed: {str(timedelta(seconds=int(end-start)))}\n\n')
+                print(
+                    f'>>>>> Saving {len(df_notebooks)} searching results to disk...'
+                    )
+                print(
+                    f'>>>>> Time elapsed: {str(timedelta(seconds=int(end - start)))}\n\n'
+                    )
                 # Reset the notebooks after saving to the log file
-                df_notebooks.drop(df_notebooks.index, inplace=True) 
+                df_notebooks.drop(df_notebooks.index, inplace=True)
         return search_all
 
-    # memory_profile decorator
-    @profile
-    def bulk_download(self, df_notebooks): 
-        ''' Download a bunch of notebooks specified inside `df_notebooks`'''
+    def bulk_download(self, df_notebooks):
+        """ Download a bunch of notebooks specified inside `df_notebooks`"""
         # Read notebook download logs and filter out the new notbooks to download
-        try: 
-            download_logs = pd.read_csv(self.KAGGLE_DOWNLOAD_LOG_FILE)
+        try:
+            download_logs = pd.read_csv(self.files['download_log'])
         except Exception as e:
-            print(e) 
+            print(e)
             download_logs = pd.DataFrame(columns=df_notebooks.columns)
-        
+
         merged = df_notebooks.merge(download_logs, how='left', indicator=True)
-        new_notebooks = merged[merged['_merge'] == 'left_only'].drop(columns=['_merge'])
+        new_notebooks = merged[merged['_merge'] == 'left_only'].drop(
+            columns=['_merge']
+            )
         new_notebooks.reset_index(inplace=True, drop=True)
-        print(f'--------------------------- {len(new_notebooks)} new Notebooks --------------------------------')
+        print(
+            f'--------------------------- {len(new_notebooks)} new Notebooks --------------------------------'
+            )
         print(f'{new_notebooks}')
-        print(f'----------------------------------------------------------------------------\n\n')
+        print(
+            f'----------------------------------------------------------------------------\n\n'
+            )
 
         # Download the notebooks and keep track of downloaded notebooks 
         start = time.time()
         downloaded_notebooks = pd.DataFrame()
         print(f'------------------ {0} - {49}  notebooks -------------------')
-        for j in range(len(new_notebooks)): 
+        for j in range(len(new_notebooks)):
             # Download the notebooks
             kernel_ref = new_notebooks.iloc[j]['kernel_ref']
-            if self.download_kernel(kernel_ref):
-                downloaded_notebooks = pd.concat([downloaded_notebooks, new_notebooks.iloc[[j]]])
+            if self.download(kernel_ref):
+                downloaded_notebooks = pd.concat(
+                    [downloaded_notebooks, new_notebooks.iloc[[j]]]
+                    )
 
-            if (j+1)%50==0 or j+1==len(new_notebooks): 
+            if (j + 1) % 50 == 0 or j + 1 == len(new_notebooks):
                 # Update notebook download logs for every 100 notebooks
-                try: 
-                    download_logs = pd.read_csv(self.KAGGLE_DOWNLOAD_LOG_FILE)
+                try:
+                    download_logs = pd.read_csv(self.files['download_log'])
                 except Exception as e:
-                    print(e) 
-                    download_logs = pd.DataFrame(columns=downloaded_notebooks.columns)
+                    print(e)
+                    download_logs = pd.DataFrame(
+                        columns=downloaded_notebooks.columns
+                        )
 
-                print(f'downloaded_notebooks.empty: {downloaded_notebooks.empty}')
-                
-                if downloaded_notebooks.empty: 
+                print(
+                    f'downloaded_notebooks.empty: {downloaded_notebooks.empty}'
+                    )
+
+                if downloaded_notebooks.empty:
                     download_all = download_logs
-                else: 
-                    download_all = download_logs.merge(downloaded_notebooks, how='outer')
+                else:
+                    download_all = download_logs.merge(
+                        downloaded_notebooks, how='outer'
+                        )
                 download_all.drop_duplicates(inplace=True)
                 # Save notebook names, IDs etc to .csv file. 
-                download_all.to_csv(self.KAGGLE_DOWNLOAD_LOG_FILE, index=False)
+                download_all.to_csv(self.files['download_log'], index=False)
                 end = time.time()
-                print(f'\n\n>>>>> Saving {len(downloaded_notebooks)} downloaded results to disk...')
-                print(f'>>>>> Time elapsed: {str(timedelta(seconds=int(end-start)))}\n\n')
+                print(
+                    f'\n\n>>>>> Saving {len(downloaded_notebooks)} downloaded results to disk...'
+                    )
+                print(
+                    f'>>>>> Time elapsed: {str(timedelta(seconds=int(end - start)))}\n\n'
+                    )
                 # Reset downloaded_notebooks
-                downloaded_notebooks.drop(downloaded_notebooks.index, inplace=True) 
-                print(f'------------------ {j+1} - {j+50}  notebooks -------------------')
+                downloaded_notebooks.drop(
+                    downloaded_notebooks.index, inplace=True
+                    )
+                print(
+                    f'------------------ {j + 1} - {j + 50}  notebooks -------------------'
+                    )
 
         return True
 
+    def crawl(self, queries: List[str], page_range: int):
+        """ Search and download notebooks using given queries
 
-    def crawl_notebooks(self, page_range, re_search=False):
-        ''' Search and download notebooks using given queries 
+        The notebooks will be downloads to disk
 
-        The notebooks will be downloaed to disk
-        '''
-        if re_search==True: 
-            df_notebooks = self.bulk_search(page_range)
-        else: 
-            try: 
-                df_notebooks = pd.read_csv(self.KAGGLE_SEARCH_LOG_FILE)
-            except Exception as e:
-                print(f'[SearchLog ERROR(self-defined)] There is no search log file specified!') 
-        
+        :param queries: search queries
+        :param page_range: number of pages to crawl for each query
+        """
+        df_notebooks = self.bulk_search(queries, page_range)
         self.bulk_download(df_notebooks)
-        return True
 
 
 def main():
     # Check if the current working path is `indexers``, if not terminate the
     # program
     if os.path.basename(os.getcwd()) != 'indexers':
-        print(f'Please navigate to `indexers` directory and run: \n'
-              f'`python -m notebooksearch.notebook_indexing`\n')
+        print(
+            f'Please navigate to `indexers` directory and run: \n'
+            f'`python -m notebooksearch.notebook_indexing`\n'
+            )
         return False
 
-    KERNEL_DOWNLOAD_PATH = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/Kaggle')
-    KAGGLE_DOWNLOAD_LOG_FILE = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/logs/kaggle_download_log.csv')
-    KAGGLE_SEARCH_LOG_FILE = os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/logs/kaggle_search_log.csv')
-    QUERY_FILE = os.path.join(os.getcwd(), 'notebooksearch/Queries/kaggle_crawler_queries.csv')
-
-    os.makedirs(
-        os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/Kaggle'),
-        exist_ok=True,
-        )
-    os.makedirs(
-        os.path.join(os.getcwd(), 'notebooksearch/Raw_notebooks/logs'),
-        exist_ok=True,
-        )
-
     # Read queries
-    df_queries = pd.read_csv(QUERY_FILE)
-    # queries = ['wsi']
-    # df_queries = pd.DataFrame(queries, columns= ['queries'])
-    # print(df_queries)
+    df_queries = pd.read_csv(
+        os.path.join(
+            os.getcwd(),
+            'notebooksearch/Queries/kaggle_crawler_queries.csv'
+            )
+        )
+    queries = df_queries['queries'].values
 
-    crawler = KaggleNotebookCrawler(df_queries, KERNEL_DOWNLOAD_PATH, KAGGLE_DOWNLOAD_LOG_FILE, KAGGLE_SEARCH_LOG_FILE)
-    result = crawler.crawl_notebooks(page_range=1, re_search=True)
-    return result
+    crawler = KaggleNotebookCrawler()
+    crawler.crawl(queries, page_range=1)
+
 
 if __name__ == '__main__':
     main()
-
