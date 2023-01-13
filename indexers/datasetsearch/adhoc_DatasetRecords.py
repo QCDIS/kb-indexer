@@ -1542,8 +1542,8 @@ def if_URL_exist(url):
 deleteAllIndexFilesByExtension(".json")
 deleteAllIndexFilesByExtension(".csv")
 #--------------------
-#Run_indexingPipeline_SeaDataNet_CDI()
-#Run_indexingPipeline_SeaDataNet_EDMED()
+Run_indexingPipeline_SeaDataNet_CDI()
+Run_indexingPipeline_SeaDataNet_EDMED()
 Run_indexingPipeline_ICOS()
 
 #--------------------
