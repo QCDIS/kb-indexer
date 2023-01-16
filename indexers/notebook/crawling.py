@@ -273,20 +273,11 @@ class KaggleNotebookCrawler(_NotebookCrawler):
 
 
 def main():
-    # Check if the current working path is `indexers``, if not terminate the
-    # program
-    if os.path.basename(os.getcwd()) != 'indexers':
-        print(
-            f'Please navigate to `indexers` directory and run: \n'
-            f'`python -m notebooksearch.notebook_indexing`\n'
-            )
-        return False
-
     # Read queries
     df_queries = pd.read_csv(
         os.path.join(
-            os.getcwd(),
-            'notebooksearch/Queries/kaggle_crawler_queries.csv'
+            os.path.dirname(__file__),
+            'data_sources/kaggle_crawler_queries.csv'
             )
         )
     queries = df_queries['queries'].values

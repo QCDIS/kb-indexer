@@ -7,9 +7,7 @@ import subprocess
 import requests
 import os
 from urllib.parse import urlparse
-from datasetsearch.WebCrawler import Crawler
 #from LanguageDetection import LangaugePrediction
-from datasetsearch import Synonyms
 from os import walk
 from bs4 import BeautifulSoup
 import requests
@@ -37,16 +35,20 @@ import csv
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+
+from .web_crawler import Crawler
+from . import synonyms
+
 #----------------------------------------------------------------------------------------
 #nltk.data.path.append("/home/siamak/nltk_data")
 #nltk.data.path.append("var/www/nltk_data")
 
-nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
+nltk_data_dir = os.path.join(os.path.dirname(__file__), 'pipeline_io/nltk_data')
 nltk.data.path.append(nltk_data_dir)
 nltk.download('wordnet', download_dir=nltk_data_dir)
 nltk.download('stopwords', download_dir=nltk_data_dir)
 
-Synonyms.download_nltk_dependencies_if_needed(nltk_data_dir)
+synonyms.download_nltk_dependencies_if_needed(nltk_data_dir)
 
 #----------------------------------------------------------------------------------------
 EnglishTerm = enchant.Dict("en_US")
@@ -58,20 +60,20 @@ spacy_nlp  = spacy.load('en_core_web_md')
 #----------------------------------------------------------------------------------------
 cwd= os.path.dirname(__file__)
 currentRun="Run 15/"
-MetaDataRecordPath=cwd+"/Metadata records/"
+MetaDataRecordPath=cwd+"/data/Metadata records/"
 ICOS__MetadataRecordsFileName="ICOS-metadata-records.json"
 SeaDataNet_CDI__MetadataRecordsFileName= "SeaDataNet-CDI-metadata-records.xml"
 SeaDataNet_EDMED__MetadataRecordsFileName= "SeaDataNet-EDMED-metadata-records.json"
 Lifewatch__MetadataRecordsFileName= "LifeWatch.txt"
-metadataStar_root=cwd+"/Metadata*/metadata*.json"
-RI_root=cwd+"/Metadata*/RIs.json"
-indexFiles_root=cwd+"/index files/"+currentRun
-domain_root=cwd+"/Metadata*/domain.json"
-essentialVariabels_root=cwd+"/Metadata*/essential_variables.json"
-domainVocbularies_root=cwd+"/Metadata*/Vocabularies.json"
+metadataStar_root=cwd+"/data_sources/metadata*.json"
+RI_root=cwd+"/data_sources/RIs.json"
+indexFiles_root=cwd+"/data/index files/"+currentRun
+domain_root=cwd+"/data_sources/domain.json"
+essentialVariabels_root=cwd+"/data_sources/essential_variables.json"
+domainVocbularies_root=cwd+"/data_sources/Vocabularies.json"
 os.makedirs(indexFiles_root, exist_ok=True)
 os.makedirs(MetaDataRecordPath, exist_ok=True)
-os.makedirs(cwd+"/Metadata*", exist_ok=True)
+os.makedirs(cwd+"/data_sources", exist_ok=True)
 #----------------------------------------------------------------------------------------
 acceptedSimilarityThreshold=0.75
 CommonSubsetThreshold=0.0
@@ -294,7 +296,7 @@ def listToString(s):
 #----------------------------------------------------------------------------------------
 def getSimilarEssentialVariables(essentialVariables, topics):
     lstEssentialVariables=[]
-    lsttopics= [*Synonyms.getSynonyms(topics), *topics]
+    lsttopics= [*synonyms.getSynonyms(topics), *topics]
     for variable in essentialVariables:
         for topic in lsttopics:
             w1=spacy_nlp(topic.lower())
@@ -1502,49 +1504,54 @@ def if_URL_exist(url):
     numHits=result['hits']['total']['value']
     return True if numHits>0 else False
 
-#getDatasetRecords__SeaDataNet_EDMED()
-#getDatasetRecords__SeaDataNet_CDI()
-#getDatasetRecords__LifeWatch()
-#getDataSetRecords__ICOS()
-#--------------------
-#lstDataset= getOnlineDatasetRecords__SeaDataNet_EDMED(True,100,1)
-#lstDataset= getOnlineDatasetRecords__SeaDataNet_CDI(True,100,1)
-#lstDataset= getOnlineDatasetRecords__ICOS(True,100,1)
-#lstDataset= getOnlineDatasetRecords__LifeWatch(True,100,1)
-#--------------------
-#lstDataset= getCurrentListOfDatasetRecords("SeaDataNet_CDI")
-#for datasetURL in lstDataset:
-#    datasetProcessing_SeaDataNet_CDI(datasetURL)
-#--------------------
-#lstDataset= getCurrentListOfDatasetRecords("ICOS")
-#for datasetURL in lstDataset:
-#    datasetProcessing_ICOS(datasetURL)
-#--------------------
-#lstDataset= getCurrentListOfDatasetRecords("LifeWatch")
-#for datasetURL in lstDataset:
-#   datasetProcessing_LifeWatch(datasetURL)
-#--------------------
-#lstDataset= getCurrentListOfDatasetRecords("SeaDataNet_EDMED")
-#for datasetURL in lstDataset:
-#   datasetProcessing_SeaDataNet_EDMED(datasetURL)
-#--------------------
-#datasetProcessing_SeaDataNet_CDI("https://cdi.seadatanet.org/report/aggregation/120/2688/120/4/ds12/json")
-#datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/Msxml8TlWbHvmQmDD6EdVgPc")
-#datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/7c3iQ3A8SAeupVvMi8wFPWEN")
-#datasetProcessing_SeaDataNet_EDMED("https://edmed.seadatanet.org/report/249/")
-#datasetProcessing_LifeWatch("https://metadatacatalogue.lifewatch.eu/srv/api/records/oai:marineinfo.org:id:dataset:4040/formatters/xml?approved=true")
-#--------------------
-#invertedIndexing("SeaDataNet_CDI_")
-#invertedIndexing("LifeWatch_")
-#invertedIndexing("SeaDataNet_EDMED_")
-#invertedIndexing("ICOS_")
-#--------------------
-deleteAllIndexFilesByExtension(".json")
-deleteAllIndexFilesByExtension(".csv")
-#--------------------
-Run_indexingPipeline_SeaDataNet_CDI()
-Run_indexingPipeline_SeaDataNet_EDMED()
-Run_indexingPipeline_ICOS()
 
-#--------------------
-#datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/0ST81nXCND5VfAQdOCSJDveT")
+def main():
+    #getDatasetRecords__SeaDataNet_EDMED()
+    #getDatasetRecords__SeaDataNet_CDI()
+    #getDatasetRecords__LifeWatch()
+    #getDataSetRecords__ICOS()
+    #--------------------
+    #lstDataset= getOnlineDatasetRecords__SeaDataNet_EDMED(True,100,1)
+    #lstDataset= getOnlineDatasetRecords__SeaDataNet_CDI(True,100,1)
+    #lstDataset= getOnlineDatasetRecords__ICOS(True,100,1)
+    #lstDataset= getOnlineDatasetRecords__LifeWatch(True,100,1)
+    #--------------------
+    #lstDataset= getCurrentListOfDatasetRecords("SeaDataNet_CDI")
+    #for datasetURL in lstDataset:
+    #    datasetProcessing_SeaDataNet_CDI(datasetURL)
+    #--------------------
+    #lstDataset= getCurrentListOfDatasetRecords("ICOS")
+    #for datasetURL in lstDataset:
+    #    datasetProcessing_ICOS(datasetURL)
+    #--------------------
+    #lstDataset= getCurrentListOfDatasetRecords("LifeWatch")
+    #for datasetURL in lstDataset:
+    #   datasetProcessing_LifeWatch(datasetURL)
+    #--------------------
+    #lstDataset= getCurrentListOfDatasetRecords("SeaDataNet_EDMED")
+    #for datasetURL in lstDataset:
+    #   datasetProcessing_SeaDataNet_EDMED(datasetURL)
+    #--------------------
+    #datasetProcessing_SeaDataNet_CDI("https://cdi.seadatanet.org/report/aggregation/120/2688/120/4/ds12/json")
+    #datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/Msxml8TlWbHvmQmDD6EdVgPc")
+    #datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/7c3iQ3A8SAeupVvMi8wFPWEN")
+    #datasetProcessing_SeaDataNet_EDMED("https://edmed.seadatanet.org/report/249/")
+    #datasetProcessing_LifeWatch("https://metadatacatalogue.lifewatch.eu/srv/api/records/oai:marineinfo.org:id:dataset:4040/formatters/xml?approved=true")
+    #--------------------
+    #invertedIndexing("SeaDataNet_CDI_")
+    #invertedIndexing("LifeWatch_")
+    #invertedIndexing("SeaDataNet_EDMED_")
+    #invertedIndexing("ICOS_")
+    #--------------------
+    deleteAllIndexFilesByExtension(".json")
+    deleteAllIndexFilesByExtension(".csv")
+    #--------------------
+    Run_indexingPipeline_SeaDataNet_CDI()
+    Run_indexingPipeline_SeaDataNet_EDMED()
+    Run_indexingPipeline_ICOS()
+
+    #--------------------
+    #datasetProcessing_ICOS("https://meta.icos-cp.eu/objects/0ST81nXCND5VfAQdOCSJDveT")
+
+if __name__ == '__main__':
+    main()

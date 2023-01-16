@@ -5,8 +5,9 @@ import time
 
 import pandas as pd
 
-from notebooksearch import utils
 from elasticsearch import Elasticsearch
+
+from . import utils
 
 
 # ----------------------------------------------------------------------------------
@@ -117,15 +118,6 @@ class ElasticsearchIndexer():
 
 
 def main():
-    # Check if the current working path is `indexers``, if not terminate the
-    # program
-    if os.path.basename(os.getcwd()) != 'indexers':
-        print(
-            f'Please navigate to `indexers` directory and run: \n'
-            f'`python -m notebooksearch.notebook_indexing`\n'
-            )
-        return False
-
     # Try to reconnect to Elasticsearch for 10 times when failing
     # This is useful when Elasticsearch service is not fully online,
     # which usually happens when starting all services at once.

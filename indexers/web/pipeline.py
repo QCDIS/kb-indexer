@@ -38,10 +38,12 @@ total_urls_visited = 0
 
 data_dir = os.path.dirname(__file__)
 
-extensionList = open(os.path.join(data_dir, 'extensions.json'), "r")
+extensionList = open(os.path.join(data_dir, 'data_sources/extensions.json'), "r")
 extensionList = json.loads(r''+extensionList.read())
 
-ResearchInfrastructures=open(os.path.join(data_dir, 'ResearchInfrastructures.json'), "r")
+ResearchInfrastructures=open(os.path.join(data_dir,
+                                          'data_sources/ResearchInfrastructures.json'
+                                          ), "r")
 ResearchInfrastructures = json.loads(r''+ResearchInfrastructures.read())
 
 #-----------------------------------------------------------------------------------------------------------------------

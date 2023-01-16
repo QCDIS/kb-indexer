@@ -1,23 +1,8 @@
 # Knowledge base indexer
 
-## Dev usage
+## Setup
 
-Starting elasticsearch
-
-```shell
-docker compose -f docker-compose_es.yml up
-```
-
-Running notebook indexing
-
-```shell
-cd indexers
-python -m notebooksearch.notebook_crawling  # saves notebooks to Raw_notebooks/
-python -m notebooksearch.notebook_preprocessing  # creates CSVs in Notebooks/
-python -m notebooksearch.notebook_indexing
-```
-
-Install language pipeline for web and dataset indexers
+Install language processing data:
 
 ```shell
 python -m spacy download en 
@@ -25,18 +10,23 @@ python -m spacy download en_core_web_md
 python -m nltk.downloader omw-1.4
 ```
 
-Run web indexer
+
+## Usage
+
+Starting elasticsearch (dev):
 
 ```shell
-cd indexers
-python -m websearch.adhoc_crawler
+docker compose -f docker-compose_es.yml up
 ```
 
-Run dataset indexer
+Running the indexing pipelines:
 
 ```shell
 cd indexers
-python -m datasetsearch.adhoc_DatasetRecords
+python -m api.pipeline
+python -m dataset.pipeline
+python -m notebook.pipeline
+python -m web.pipeline
 ```
 
 ## Indexes
@@ -45,16 +35,16 @@ python -m datasetsearch.adhoc_DatasetRecords
 
 | Entry                | Example                                                                | `github_notebooks` | `kaggle_notebooks` | `kaggle_raw_notebooks` |
 |----------------------|------------------------------------------------------------------------|--------------------|--------------------|------------------------|
-| name                 | 'Introduction to GANs with Keras'                                      | x                  | x                  | x                      |
-| full_name            |                                                                        | x                  |                    |                        |
-| stargazers_count     |                                                                        | x                  |                    |                        |
-| forks_count          |                                                                        | x                  |                    |                        |
-| description          | (rendered notebook)                                                    | x                  | x                  |                        |
-| size                 |                                                                        | x                  |                    |                        |
-| language             | 'python'                                                               | x                  | x                  |                        |
-| html_url             | 'https://www.kaggle.com/code/yushg123/introduction-to-gans-with-keras' | x                  | x                  |                        |
-| git_url              |                                                                        | x                  |                    |                        |
-| id                   |                                                                        | x                  |                    |                        |
+| (sr) name            | introduction-to-gans / Introduction to GANs with Keras                 | x                  | x                  | x                      |
+| full_name            | 'yushg123/introduction-to-gans-with-keras'                             | x                  |                    |                        |
+| (r) stargazers_count | 3                                                                      | x                  |                    |                        |
+| forks_count          | 1                                                                      | x                  |                    |                        |
+| (sr) description     | (short gh description) / (rendered notebook)                           | x                  | x                  |                        |
+| (r)size              | 524                                                                    | x                  |                    |                        |
+| language             | 'Jupyter Notebook' / 'python'                                          | x                  | x                  |                        |
+| (r) html_url         | 'https://www.kaggle.com/code/yushg123/introduction-to-gans-with-keras' | x                  | x                  |                        |
+| (r) git_url          | 'https://github.com/dtrupenn/Tetris.git'                               | x                  |                    |                        |
+| id                   | 1829838                                                                | x                  |                    |                        |
 | source               | 'Kaggle'                                                               | x                  | x                  | x                      |
 | source_id            | 'yushg123/introduction-to-gans-with-keras'                             |                    | x                  | x                      |
 | file_name            | 'yushg123_introduction-to-gans-with-keras.ipynb'                       |                    | x                  | x                      |

@@ -36,7 +36,7 @@ def indexing_pipeline():
             )
         es.indices.open(index='webapi')
 
-    root = os.path.join(os.path.dirname(__file__), 'DB')
+    root = os.path.join(os.path.dirname(__file__), 'data_sources/DB')
     for path, _, files in os.walk(root):
         for name in files:
             record = os.path.join(path, name)
