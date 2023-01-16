@@ -1,0 +1,11 @@
+{"API name": ["3TIER REST API"],
+  "Description": [" 3TIER's API enables you to integrate our scientifically derived, global wind and solar resource data into your own internal applications and customer experiences. You can use the API to build revenue-generating applications and mash-ups including: \u00bb Web-based lead generation programs \u00bb Internal and customer-facing sales tools \u00bb Product selection tools \u00bb Project design and financial modeling tools\nThe API accesses 3TIER's global data using simple REST calls. It is an open, standards based, XML programming interface. To make integration simple and quick, 3TIER provides detailed developer documentation, programming examples, and sample code.\nFor more information, please visit: [[http://www.3tier.com/en/package_detail/prospecting-wind-api/ www.3tier.com]]."],
+  "Url": ["http://www.3tier.com/en/package_detail/prospecting-wind-api/"],
+  "Category": ["Weather", "Science", "Energy", "Sustainability", "Environment"],
+  "Provider": [],
+  "ServiceType": [],
+  "Documentation": ["http://www.3tier.com/en/package_detail/prospecting-wind-api/"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": [],
+  "Logo": ["https://www.programmableweb.com/sites/all/modules/contrib/lazyloader/image_placeholder.gif"]}

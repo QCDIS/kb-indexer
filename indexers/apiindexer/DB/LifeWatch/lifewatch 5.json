@@ -1,0 +1,12 @@
+{"API name": ["Simple search"],
+  "Description": ["This api is a POST method and it returns external_id, code, title, subtitle, description of those resources that matched the specified search parameters. The possible input parameters for post method are: Code, title, subtitle, description, it is mandatory to enter at least one parameter.\nThis api can be tested using the site https://reqbin.com/ or postman app. Select POST type of rest, insert the url in the dedicated text area, then select Content and choose FORM URL Encoded (application/x-www-form-urlencoded) in the drop down menu."],
+  "Url": ["https://trainingcatalogue.lifewatch.eu/site/api"],
+  "Category": ["Environment"],
+  "Provider": ["LifeWatch"],
+  "ServiceType": [],
+  "Documentation": ["https://trainingcatalogue.lifewatch.eu/site/api"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://trainingcatalogue.lifewatch.eu/media/LifeWatch_ERIC_800x353.png"]
+}

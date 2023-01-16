@@ -1,0 +1,12 @@
+{"API name": ["BioMa cloud"],
+  "Description": ["The BioMa framework complete suite"],
+  "Url": ["https://developer.anaee.eu/api-details#api=biomaazuremodelexecutornetframework20200226025441&operation=post-documentobject"],
+  "Category": ["Weather"],
+  "Provider": ["AnaEE"],
+  "ServiceType": [],
+  "Documentation": ["https://developer.anaee.eu/api-details#api=biomaazuremodelexecutornetframework20200226025441&operation=post-documentobject"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://developer.anaee.eu/content/logo_anaee.png"]
+}

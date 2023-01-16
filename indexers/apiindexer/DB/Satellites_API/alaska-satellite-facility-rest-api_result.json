@@ -1,0 +1,11 @@
+{"API name": ["Alaska Satellite Facility REST API"],
+  "Description": [" The Alaska Satellite Facility (ASF) is one of eight Distributed Active Archive Centers (DAAC) which provide data to the NASA Earth Science Data and Information System (ESDIS). ASF's DAAC is the synthetic aperture radar (SAR) Data Center specializing in SAR data collection, processing, archiving, and distribution. An API allows access to the SAR Data Center archive using POST and GET protocols."],
+  "Url": ["https://www.asf.alaska.edu/get-data/api/"],
+  "Category": ["Science", "Data", "Satellites"],
+  "Provider": ["Alaska Satellite Facility"],
+  "ServiceType": ["Web/Internet"],
+  "Documentation": ["https://www.asf.alaska.edu/get-data/get-started/"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": ["http://api.daac.asf.alaska.edu/services/search/param"],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://www.programmableweb.com/sites/all/modules/contrib/lazyloader/image_placeholder.gif"]}

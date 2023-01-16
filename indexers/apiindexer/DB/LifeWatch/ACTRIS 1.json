@@ -1,0 +1,12 @@
+{"API name": ["ACTRIS metadata catalog REST API"],
+  "Description": ["API documentation for the ACTRIS metadata catalog. In order to add or delete metadata in the catalog, you would need to be a registered data provider and create an API token.\n\nPlease contact the ACTRIS Data Centre (DVAS unit) if you have any questions or need an API token."],
+  "Url": ["https://dev-actris-md.nilu.no/index.html"],
+  "Category": ["Environment"],
+  "Provider": ["ACTRIS"],
+  "ServiceType": [],
+  "Documentation": ["https://dev-actris-md.nilu.no/index.html"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://www.actris.eu/themes/paranoid/logo-actris-white.png"]
+}

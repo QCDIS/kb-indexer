@@ -1,0 +1,12 @@
+{"API name": ["Naturalis API"],
+  "Description": ["Demo build to demonstrate data collections / Cordra client usage. This commandline runner application aims to request data from the naturalis API based on a condition and insert it into Cordra."],
+  "Url": ["https://github.com/DiSSCo/demo-naturalis-api"],
+  "Category": ["Environment"],
+  "Provider": ["DiSSCo"],
+  "ServiceType": [],
+  "Documentation": ["https://github.com/DiSSCo/demo-naturalis-api"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": [""]
+}

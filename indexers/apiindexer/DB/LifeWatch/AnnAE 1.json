@@ -1,0 +1,12 @@
+{"API name": ["CREA AA Italian historical weather series"],
+  "Description": ["This API allows programmatic access to an extensive collection of historical weather series covering the whole Italian territory with 10 km resolution, starting from 1961."],
+  "Url": ["https://developer.anaee.eu/api-details#api=crea-aa-italian-historical-wheater-series&operation=post-getrasterdata"],
+  "Category": ["Weather"],
+  "Provider": ["AnaEE"],
+  "ServiceType": [],
+  "Documentation": ["https://developer.anaee.eu/api-details#api=crea-aa-italian-historical-wheater-series&operation=post-getrasterdata"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://developer.anaee.eu/content/logo_anaee.png"]
+}

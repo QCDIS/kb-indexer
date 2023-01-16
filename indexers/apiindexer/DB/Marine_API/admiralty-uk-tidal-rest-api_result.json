@@ -1,0 +1,11 @@
+{"API name": ["ADMIRALTY UK Tidal REST API"],
+  "Description": [" The ADMIRALTY UK Tidal API allows you to access tidal predictions for the UK coastline. It enables you with the ability to Get predictions of high tide and low tide times, locate permanent and temporary tide stations around the UK\u200b and more. ADMIRALTY provides news and updates on ADMIRALTY Maritime Data Solutions, global hydrographic and geospatial information."],
+  "Url": ["https://www.admiralty.co.uk/digital-services/data-solutions/uk-tidal-api"],
+  "Category": ["Marine", "Data", "News Services", "Predictions"],
+  "Provider": [],
+  "ServiceType": ["Web/Internet"],
+  "Documentation": ["https://admiraltyapi.portal.azure-api.net/"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["No"],
+  "Logo": ["https://www.programmableweb.com/sites/all/modules/contrib/lazyloader/image_placeholder.gif"]}

@@ -1,0 +1,12 @@
+{"API name": ["GeoNetwork Api Documentation"],
+  "Description": ["Learn how to access the catalog using the GeoNetwork REST API. Created by geonetwork@osgeo.org"],
+  "Url": ["https://www.aquacosm.eu/geonetwork/doc/api/#/"],
+  "Category": ["AQUACOSM"],
+  "Provider": ["LifeWatch"],
+  "ServiceType": [],
+  "Documentation": ["https://www.aquacosm.eu/geonetwork/doc/api/#/"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": [""]
+}

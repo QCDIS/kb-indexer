@@ -1,0 +1,12 @@
+{"API name": ["Single resource detail"],
+  "Description": ["This api is a GET method and it returns all resource data, included LOM fields, that match the parameter external_id in input. The input parameter external_id is mandatory and it is the unique id of required resource. The input parameter format is optional and it permits to obtain the response as xml, if format = xml, or as json, if format =json. If format parameter is not used, the default response format is json. To test it copy and paste the url in a browser."],
+  "Url": ["https://trainingcatalogue.lifewatch.eu/site/api"],
+  "Category": ["Environment"],
+  "Provider": ["LifeWatch"],
+  "ServiceType": [],
+  "Documentation": ["https://trainingcatalogue.lifewatch.eu/site/api"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": [],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://trainingcatalogue.lifewatch.eu/media/LifeWatch_ERIC_800x353.png"]
+}

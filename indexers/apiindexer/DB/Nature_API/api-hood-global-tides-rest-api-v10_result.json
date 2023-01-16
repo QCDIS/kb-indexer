@@ -1,0 +1,11 @@
+{"API name": ["API Hood Global Tides REST API v1.0"],
+  "Description": [" The API Hood Global Tides provides Oceans tidal heights and extremes predictions. Tide predictions calculate low and high tides based on time and location. Developers can use JSON format to make calls via RapidAPI.\nNote: Predictions are based on historical tidal gauge data and satellite altimetry and do not take current weather and seismic events into consideration."],
+  "Url": ["https://api.hood.land/api/tides"],
+  "Category": ["Weather", "Marine", "Nature", "Water"],
+  "Provider": ["API Hood"],
+  "ServiceType": ["Web/Internet"],
+  "Documentation": ["https://rapidapi.com/apihood/api/tides/details"],
+  "Architectural Style": ["REST"],
+  "Endpoint Url": ["https://tides.p.rapidapi.com/"],
+  "Support SSL": ["Yes"],
+  "Logo": ["https://www.programmableweb.com/sites/all/modules/contrib/lazyloader/image_placeholder.gif"]}
