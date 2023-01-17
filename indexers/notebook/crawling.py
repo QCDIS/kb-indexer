@@ -315,39 +315,42 @@ class GithubNotebookCrawler(_NotebookCrawler):
         with open(token_file, 'r') as f:
             self._api_token = f.read().strip()
 
+    @staticmethod
+    def _wait_for_available_rate(rate):
+        while rate.remaining <= 0:
+            print('API rate exceeded, waiting', rate)
+            time.sleep(10)
+
     def search(self, query: str, page_range: int) -> pd.DataFrame:
         query += ' language:jupyter-notebook'
         query += ' in:readme in:description in:topics'
 
         g = Github(self._api_token)
         for page in range(1, page_range + 1):
-            try:
-                result = g.search_repositories(
-                    query,
-                    sort='stars',
-                    order='desc',
-                    )
-                data = []
-                for i, repo in enumerate(result):
-                    new_record = {
-                        'query': query,
-                        "id": i,
-                        "name": repo.full_name,
-                        "description": (re.sub(
-                            r'[^A-Za-z0-9 ]+', '', repo.description) if
-                            repo.description is not None else None),
-                        "html_url": repo.html_url,
-                        "git_url": repo.clone_url,
-                        "language": repo.language,
-                        "stars": repo.stargazers_count,
-                        "size": repo.size,
-                        }
-                    if new_record not in data:
-                        data.append(new_record)
-            except RateLimitExceededException:
-                print("Count rate exceeding, waiting...")
-                time.sleep(10)
-            # time.sleep(10)  # FIXME
+            self._wait_for_available_rate(g.get_rate_limit().search)
+            result = g.search_repositories(
+                query,
+                sort='stars',
+                order='desc',
+                )
+            data = []
+            for i, repo in enumerate(result):
+                new_record = {
+                    'query': query,
+                    "id": i,
+                    "name": repo.full_name,
+                    "description": (re.sub(
+                        r'[^A-Za-z0-9 ]+', '', repo.description) if
+                        repo.description is not None else None),
+                    "html_url": repo.html_url,
+                    "git_url": repo.clone_url,
+                    "language": repo.language,
+                    "stars": repo.stargazers_count,
+                    "size": repo.size,
+                    }
+                if new_record not in data:
+                    data.append(new_record)
+                self._wait_for_available_rate(g.get_rate_limit().search)
         return pd.DataFrame(data)
 
     def download(self, metadata: pd.Series) -> bool:
