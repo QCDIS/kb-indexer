@@ -316,9 +316,8 @@ class GithubNotebookCrawler(_NotebookCrawler):
             self._api_token = f.read().strip()
 
     def search(self, query: str, page_range: int) -> pd.DataFrame:
-        keywords = [keyword.strip() for keyword in query.split(',')]
-        keywords.append("notebook")
-        query = '+'.join(keywords) + '+in:readme+in:description'
+        query += ' language:jupyter-notebook'
+        query += ' in:readme in:description in:topics'
 
         g = Github(self._api_token)
         for page in range(1, page_range + 1):
@@ -334,17 +333,16 @@ class GithubNotebookCrawler(_NotebookCrawler):
                         'query': query,
                         "id": i,
                         "name": repo.full_name,
-                        "description": re.sub(r'[^A-Za-z0-9 ]+',
-                                              '',
-                                              repo.description),
+                        "description": (re.sub(
+                            r'[^A-Za-z0-9 ]+', '', repo.description) if
+                            repo.description is not None else None),
                         "html_url": repo.html_url,
                         "git_url": repo.clone_url,
                         "language": repo.language,
                         "stars": repo.stargazers_count,
                         "size": repo.size,
                         }
-                    if (new_record["language"] == "Jupyter Notebook"
-                            and new_record not in data):
+                    if new_record not in data:
                         data.append(new_record)
             except RateLimitExceededException:
                 print("Count rate exceeding, waiting...")
