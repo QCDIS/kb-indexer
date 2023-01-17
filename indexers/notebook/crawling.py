@@ -1,6 +1,8 @@
+import abc
 import os
 import pandas as pd
 import kaggle
+from kaggle.rest import ApiException
 import time
 from datetime import timedelta
 from typing import List
@@ -14,7 +16,7 @@ class _NotebookCrawler:
         self.directories = {
             'notebooks': f'data/{self.source_name}/raw_notebooks/',
             'metadata': f'data/{self.source_name}/notebooks_metadata/',
-            'log': f'data/logs/',
+            'log': f'data/{self.source_name}/logs/',
             }
         self._add_abs_path_to_directories()
         self._make_directories()
@@ -33,14 +35,167 @@ class _NotebookCrawler:
         for d in self.directories.values():
             os.makedirs(d, exist_ok=True)
 
+    @abc.abstractmethod
+    def search(self, query: str, page_range: int) -> pd.DataFrame:
+        """ Search a given query term
+
+        :param query: search query
+        :param page_range: number of pages to crawl for each query
+        :return: result dataframe with at least the columns 'query', 'title',
+            'notebook_ref', plus possibly some extra metadata.
+        """
+        pass
+
+    @abc.abstractmethod
+    def download(self, metadata: pd.Series) -> bool:
+        """ Download notebooks and metadata
+
+        :param metadata: metadata containing at least 'query', 'title',
+            and 'notebook_ref' (see output of `search()`).
+        :return: Only True when the file is correctly downloaded or
+            already exist
+        """
+        pass
+
+    def bulk_search(self, queries, page_range):
+        """' Search for notebooks """
+        df_notebooks = pd.DataFrame()
+        search_all = pd.DataFrame()
+        # Search notebooks for each query
+        start = time.time()
+        for i, query in enumerate(queries):
+            print(
+                f'---------------- Query [{i + 1}]: {query} ----------------'
+                )
+            # To save the memory, we write the searching results to disk for
+            # every 10 queries
+            df_notebooks = pd.concat(
+                [df_notebooks, self.search(query, page_range)]
+                )
+            df_notebooks.drop_duplicates(inplace=True)
+            if (i + 1) % 10 == 0 or i + 1 == len(queries):
+                # Update notebook search logs
+                try:
+                    search_logs = pd.read_csv(self.files['search_log'])
+                except Exception as e:
+                    print(e)
+                    search_logs = pd.DataFrame(columns=df_notebooks.columns)
+
+                if df_notebooks.empty:
+                    search_all = search_logs
+                else:
+                    search_all = search_logs.merge(df_notebooks, how='outer')
+                search_all.drop_duplicates(inplace=True)
+                search_all.to_csv(self.files['search_log'], index=False)
+                end = time.time()
+                print(
+                    f'>>>>> Saving {len(df_notebooks)} searching results to '
+                    f'disk...'
+                    )
+                print(
+                    f'>>>>> Time elapsed: '
+                    f'{str(timedelta(seconds=int(end - start)))}\n\n'
+                    )
+                # Reset the notebooks after saving to the log file
+                df_notebooks.drop(df_notebooks.index, inplace=True)
+        return search_all
+
+    def bulk_download(self, df_notebooks):
+        """ Download a bunch of notebooks specified inside `df_notebooks` """
+        # Read notebook download logs and filter out the new notebooks to
+        # download
+        try:
+            download_logs = pd.read_csv(self.files['download_log'])
+        except Exception as e:
+            print(e)
+            download_logs = pd.DataFrame(columns=df_notebooks.columns)
+
+        merged = df_notebooks.merge(download_logs, how='left', indicator=True)
+        new_notebooks = merged[merged['_merge'] == 'left_only'].drop(
+            columns=['_merge']
+            )
+        new_notebooks.reset_index(inplace=True, drop=True)
+        print(
+            f'--------------------------- {len(new_notebooks)} new Notebooks '
+            f'--------------------------------'
+            )
+        print(f'{new_notebooks}')
+        print(
+            f'---------------------------------------------------------------'
+            f'-------------\n\n'
+            )
+
+        # Download the notebooks and keep track of downloaded notebooks
+        start = time.time()
+        downloaded_notebooks = pd.DataFrame()
+        print(f'------------------ {0} - {49}  notebooks -------------------')
+        for j in range(len(new_notebooks)):
+            # Download the notebooks
+            if self.download(new_notebooks.iloc[j]):
+                downloaded_notebooks = pd.concat(
+                    [downloaded_notebooks, new_notebooks.iloc[[j]]]
+                    )
+
+            if (j + 1) % 50 == 0 or j + 1 == len(new_notebooks):
+                # Update notebook download logs for every 100 notebooks
+                try:
+                    download_logs = pd.read_csv(self.files['download_log'])
+                except Exception as e:
+                    print(e)
+                    download_logs = pd.DataFrame(
+                        columns=downloaded_notebooks.columns
+                        )
+
+                print(
+                    f'downloaded_notebooks.empty: {downloaded_notebooks.empty}'
+                    )
+
+                if downloaded_notebooks.empty:
+                    download_all = download_logs
+                else:
+                    download_all = download_logs.merge(
+                        downloaded_notebooks, how='outer'
+                        )
+                download_all.drop_duplicates(inplace=True)
+                # Save notebook names, IDs etc to .csv file.
+                download_all.to_csv(self.files['download_log'], index=False)
+                end = time.time()
+                print(
+                    f'\n\n>>>>> Saving {len(downloaded_notebooks)} '
+                    f'downloaded results to disk...'
+                    )
+                print(
+                    f'>>>>> Time elapsed: '
+                    f'{str(timedelta(seconds=int(end - start)))}\n\n'
+                    )
+                # Reset downloaded_notebooks
+                downloaded_notebooks.drop(
+                    downloaded_notebooks.index, inplace=True
+                    )
+                print(
+                    f'------------------ {j + 1} - {j + 50}  notebooks '
+                    f'-------------------'
+                    )
+
+        return True
+
+    def crawl(self, queries: List[str], page_range: int):
+        """ Search and download notebooks using given queries
+
+        The notebooks will be downloads to disk
+
+        :param queries: search queries
+        :param page_range: number of pages to crawl for each query
+        """
+        df_notebooks = self.bulk_search(queries, page_range)
+        self.bulk_download(df_notebooks)
+
 
 class KaggleNotebookCrawler(_NotebookCrawler):
 
     source_name = 'Kaggle'
 
-    def search(self, query, page_range):
-        """ Search Kaggle kernels using given query
-        """
+    def search(self, query: str, page_range: int) -> pd.DataFrame:
         kernels = []
         for page in range(1, page_range + 1):
             try:
@@ -51,7 +206,7 @@ class KaggleNotebookCrawler(_NotebookCrawler):
                 else:
                     kernels.extend(kernel_list)
             # Skip the pages that cause ApiException
-            except kaggle.rest.ApiException:
+            except ApiException:
                 continue
 
         # Extract the `title` and the `ref` of returned Kaggle kernels
@@ -61,32 +216,31 @@ class KaggleNotebookCrawler(_NotebookCrawler):
                 {
                     'query': query,
                     'title': kernel.title,
-                    'kernel_ref': kernel.ref
+                    'notebook_ref': kernel.ref
                     }
                 )
 
         print('\n')
         return pd.DataFrame(results)
 
-    def download(self, notebook_ref):
-        """ Download the kernels together with the metadata file
+    def download(self, metadata: pd.Series) -> bool:
+        """ Download notebooks and metadata
 
-        Args:
-            - notebook_ref: the ID used by Kaggle to denote one notebook.
-
-        Return:
-            - Boolean: Only True when the file is correctly downloaded or
-              already exists.
-
+        :param metadata: metadata containing at least 'query', 'title',
+            and 'notebook_ref' (see output of `search()`).
+        :return: Only True when the file is correctly downloaded or
+            already exist
 
         The notebook will be downloaded as 'dirname_basename' of
         `notebook_ref`.
 
-        For example, given kernel_ref = 'buddhiniw/breast-cancer-prediction',
+        For example, given notebook_ref = 'buddhiniw/breast-cancer-prediction',
         there will be two files downloaded:
             - buddhiniw_breast-cancer-prediction.ipynb
             - buddhiniw_breast-cancer-prediction.json
         """
+        notebook_ref = metadata['notebook_ref']
+
         if pd.isna(notebook_ref):
             print(f'[*NO REF] {notebook_ref}')
             return False
@@ -145,131 +299,6 @@ class KaggleNotebookCrawler(_NotebookCrawler):
             print("Exception: ", err)
             return False
         return True
-
-    def bulk_search(self, queries, page_range):
-        """' Search for notebooks """
-        df_notebooks = pd.DataFrame()
-        # Search notebooks for each query
-        start = time.time()
-        for i, query in enumerate(queries):
-            print(
-                f'---------------- Query [{i + 1}]: {query} ----------------'
-                )
-            # To save the memory, we write the searching results to disk for
-            # every 10 queries
-            df_notebooks = pd.concat(
-                [df_notebooks, self.search(query, page_range)]
-                )
-            df_notebooks.drop_duplicates(inplace=True)
-            if (i + 1) % 10 == 0 or i + 1 == len(queries):
-                # Update notebook search logs
-                try:
-                    search_logs = pd.read_csv(self.files['search_log'])
-                except Exception as e:
-                    print(e)
-                    search_logs = pd.DataFrame(columns=df_notebooks.columns)
-
-                if df_notebooks.empty:
-                    search_all = search_logs
-                else:
-                    search_all = search_logs.merge(df_notebooks, how='outer')
-                search_all.drop_duplicates(inplace=True)
-                search_all.to_csv(self.files['search_log'], index=False)
-                end = time.time()
-                print(
-                    f'>>>>> Saving {len(df_notebooks)} searching results to disk...'
-                    )
-                print(
-                    f'>>>>> Time elapsed: {str(timedelta(seconds=int(end - start)))}\n\n'
-                    )
-                # Reset the notebooks after saving to the log file
-                df_notebooks.drop(df_notebooks.index, inplace=True)
-        return search_all
-
-    def bulk_download(self, df_notebooks):
-        """ Download a bunch of notebooks specified inside `df_notebooks`"""
-        # Read notebook download logs and filter out the new notbooks to download
-        try:
-            download_logs = pd.read_csv(self.files['download_log'])
-        except Exception as e:
-            print(e)
-            download_logs = pd.DataFrame(columns=df_notebooks.columns)
-
-        merged = df_notebooks.merge(download_logs, how='left', indicator=True)
-        new_notebooks = merged[merged['_merge'] == 'left_only'].drop(
-            columns=['_merge']
-            )
-        new_notebooks.reset_index(inplace=True, drop=True)
-        print(
-            f'--------------------------- {len(new_notebooks)} new Notebooks --------------------------------'
-            )
-        print(f'{new_notebooks}')
-        print(
-            f'----------------------------------------------------------------------------\n\n'
-            )
-
-        # Download the notebooks and keep track of downloaded notebooks 
-        start = time.time()
-        downloaded_notebooks = pd.DataFrame()
-        print(f'------------------ {0} - {49}  notebooks -------------------')
-        for j in range(len(new_notebooks)):
-            # Download the notebooks
-            kernel_ref = new_notebooks.iloc[j]['kernel_ref']
-            if self.download(kernel_ref):
-                downloaded_notebooks = pd.concat(
-                    [downloaded_notebooks, new_notebooks.iloc[[j]]]
-                    )
-
-            if (j + 1) % 50 == 0 or j + 1 == len(new_notebooks):
-                # Update notebook download logs for every 100 notebooks
-                try:
-                    download_logs = pd.read_csv(self.files['download_log'])
-                except Exception as e:
-                    print(e)
-                    download_logs = pd.DataFrame(
-                        columns=downloaded_notebooks.columns
-                        )
-
-                print(
-                    f'downloaded_notebooks.empty: {downloaded_notebooks.empty}'
-                    )
-
-                if downloaded_notebooks.empty:
-                    download_all = download_logs
-                else:
-                    download_all = download_logs.merge(
-                        downloaded_notebooks, how='outer'
-                        )
-                download_all.drop_duplicates(inplace=True)
-                # Save notebook names, IDs etc to .csv file. 
-                download_all.to_csv(self.files['download_log'], index=False)
-                end = time.time()
-                print(
-                    f'\n\n>>>>> Saving {len(downloaded_notebooks)} downloaded results to disk...'
-                    )
-                print(
-                    f'>>>>> Time elapsed: {str(timedelta(seconds=int(end - start)))}\n\n'
-                    )
-                # Reset downloaded_notebooks
-                downloaded_notebooks.drop(
-                    downloaded_notebooks.index, inplace=True
-                    )
-                print(
-                    f'------------------ {j + 1} - {j + 50}  notebooks -------------------'
-                    )
-
-        return True
-
-    def crawl(self, queries: List[str], page_range: int):
-        """ Search and download notebooks using given queries
-
-        The notebooks will be downloads to disk
-
-        :param queries: search queries
-        :param page_range: number of pages to crawl for each query
-        """
-        df_notebooks = self.bulk_search(queries, page_range)
-        self.bulk_download(df_notebooks)
 
 
 def main():
