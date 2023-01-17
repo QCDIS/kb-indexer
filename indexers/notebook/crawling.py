@@ -1,8 +1,11 @@
 import abc
 import os
+import re
 import pandas as pd
 import kaggle
 from kaggle.rest import ApiException
+from github import Github
+from github.GithubException import RateLimitExceededException
 import time
 from datetime import timedelta
 from typing import List
@@ -41,7 +44,7 @@ class _NotebookCrawler:
 
         :param query: search query
         :param page_range: number of pages to crawl for each query
-        :return: result dataframe with at least the columns 'query', 'title',
+        :return: result dataframe
             'notebook_ref', plus possibly some extra metadata.
         """
         pass
@@ -50,8 +53,7 @@ class _NotebookCrawler:
     def download(self, metadata: pd.Series) -> bool:
         """ Download notebooks and metadata
 
-        :param metadata: metadata containing at least 'query', 'title',
-            and 'notebook_ref' (see output of `search()`).
+        :param metadata: results metadata (see output of `search()`)
         :return: Only True when the file is correctly downloaded or
             already exist
         """
@@ -226,8 +228,7 @@ class KaggleNotebookCrawler(_NotebookCrawler):
     def download(self, metadata: pd.Series) -> bool:
         """ Download notebooks and metadata
 
-        :param metadata: metadata containing at least 'query', 'title',
-            and 'notebook_ref' (see output of `search()`).
+        :param metadata: results metadata (see output of `search()`)
         :return: Only True when the file is correctly downloaded or
             already exist
 
@@ -301,6 +302,60 @@ class KaggleNotebookCrawler(_NotebookCrawler):
         return True
 
 
+class GithubNotebookCrawler(_NotebookCrawler):
+
+    source_name = 'Github'
+
+    def __init__(self):
+        super().__init__()
+        self._init_api_token()
+
+    def _init_api_token(self):
+        token_file = os.path.join(os.path.expanduser('~/.github/token'))
+        with open(token_file, 'r') as f:
+            self._api_token = f.read().strip()
+
+    def search(self, query: str, page_range: int) -> pd.DataFrame:
+        keywords = [keyword.strip() for keyword in query.split(',')]
+        keywords.append("notebook")
+        query = '+'.join(keywords) + '+in:readme+in:description'
+
+        g = Github(self._api_token)
+        for page in range(1, page_range + 1):
+            try:
+                result = g.search_repositories(
+                    query,
+                    sort='stars',
+                    order='desc',
+                    )
+                data = []
+                for i, repo in enumerate(result):
+                    new_record = {
+                        'query': query,
+                        "id": i,
+                        "name": repo.full_name,
+                        "description": re.sub(r'[^A-Za-z0-9 ]+',
+                                              '',
+                                              repo.description),
+                        "html_url": repo.html_url,
+                        "git_url": repo.clone_url,
+                        "language": repo.language,
+                        "stars": repo.stargazers_count,
+                        "size": repo.size,
+                        }
+                    if (new_record["language"] == "Jupyter Notebook"
+                            and new_record not in data):
+                        data.append(new_record)
+            except RateLimitExceededException:
+                print("Count rate exceeding, waiting...")
+                time.sleep(10)
+            # time.sleep(10)  # FIXME
+        return pd.DataFrame(data)
+
+    def download(self, metadata: pd.Series) -> bool:
+        raise NotImplementedError
+
+
 def main():
     # Read queries
     df_queries = pd.read_csv(
@@ -312,6 +367,9 @@ def main():
     queries = df_queries['queries'].values
 
     crawler = KaggleNotebookCrawler()
+    crawler.crawl(queries, page_range=1)
+
+    crawler = GithubNotebookCrawler()
     crawler.crawl(queries, page_range=1)
 
 
