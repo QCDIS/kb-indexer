@@ -14,7 +14,7 @@ from collections import Counter
 import en_core_web_sm
 import lxml.html
 import validators
-from elasticsearch_dsl import Search, Index
+from elasticsearch_dsl import Index
 
 from .. import utils
 
@@ -388,26 +388,7 @@ def indexWebsite(url):
                 print("Metadata ingested ("+str(cnt)+")\n")
 #-----------------------------------------------------------------------------------------------------------------------
 def if_URL_exist(url):
-    es = utils.create_es_client()
-    index = Index('webcontents', es)
-
-    if not es.indices.exists(index='webcontents'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='webcontents')
-        put = es.indices.put_settings(
-            index='webcontents',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='webcontents')
+    indexer = utils.ElasticsearchIndexer('webcontents')
 
     user_request = "some_param"
     query_body = {
@@ -423,35 +404,16 @@ def if_URL_exist(url):
         "from": 0,
         "size": 1
     }
-    result = es.search(index="webcontents", body=query_body)
+    result = indexer.es.search(index="webcontents", body=query_body)
     numHits=result['hits']['total']['value']
     return True if numHits>0 else False
 #-----------------------------------------------------------------------------------------------------------------------
 def ingest_metadataFile(metadataFile):
-    es = utils.create_es_client()
-    index = Index('webcontents', es)
+    indexer = utils.ElasticsearchIndexer('webcontents')
 
-    if not es.indices.exists(index='webcontents'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='webcontents')
-        put = es.indices.put_settings(
-            index='webcontents',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='webcontents')
-
-        id = metadataFile["url"]
-        res = es.index(index="webcontents", id=id, body=metadataFile)
-        es.indices.refresh(index="webcontents")
+    id = metadataFile["url"]
+    res = indexer.es.index(index="webcontents", id=id, body=metadataFile)
+    indexer.es.indices.refresh(index="webcontents")
 
 #-----------------------------------------------------------------------------------------------------------------------
 def envriCrawler():

@@ -1,5 +1,5 @@
 from datetime import datetime
-from elasticsearch_dsl import Search, Index
+from elasticsearch_dsl import Index
 import json
 import shlex
 import subprocess
@@ -1344,26 +1344,7 @@ def saveSelectedURLs(lstDataset, datasetTitle):
 # if index exists, change settings
 
 def Run_indexingPipeline_ingest_indexFiles():
-    es = utils.create_es_client()
-    index = Index('envri', es)
-
-    if not es.indices.exists(index='envri'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='envri')
-        put = es.indices.put_settings(
-            index='envri',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='envri')
+    indexer = utils.ElasticsearchIndexer('envri')
 
     # path is correct IF this file is in the same folder as 'envri_json'
     indexfnames = os.path.join(indexFiles_root)
@@ -1375,8 +1356,8 @@ def Run_indexingPipeline_ingest_indexFiles():
         id = doc["url"]
         print(round(((i + 1) / len(filelist) * 100), 2), "%", filelist[i])  # keep track of progress / counter
         indexed += 1
-        res = es.index(index="envri", id=doc["url"], body=doc)
-        es.indices.refresh(index="envri")
+        res = indexer.es.index(index="envri", id=doc["url"], body=doc)
+        indexer.es.indices.refresh(index="envri")
     deleteAllIndexFilesByExtension(".json")
 # ----------------------------------------------------------------
 def open_file(file):
@@ -1466,26 +1447,7 @@ def deleteAllIndexFilesByExtension(extension):
         os.remove(path_to_file)
 # ----------------------------------------------------------------------
 def if_URL_exist(url):
-    es = utils.create_es_client()
-    index = Index('envri', es)
-
-    if not es.indices.exists(index='envri'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='envri')
-        put = es.indices.put_settings(
-            index='envri',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='envri')
+    indexer = utils.ElasticsearchIndexer('envri')
 
     user_request = "some_param"
     query_body = {
@@ -1501,7 +1463,7 @@ def if_URL_exist(url):
         "from": 0,
         "size": 1
     }
-    result = es.search(index="envri", body=query_body)
+    result = indexer.es.search(index="envri", body=query_body)
     numHits=result['hits']['total']['value']
     return True if numHits>0 else False
 

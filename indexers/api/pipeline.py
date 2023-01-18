@@ -14,27 +14,7 @@ def open_file(file):
 
 
 def indexing_pipeline():
-    es = utils.create_es_client()
-    index = Index('webapi', es)
-
-    if not es.indices.exists(index='webapi'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-            )
-        index.create()
-    else:
-        es.indices.close(index='webapi')
-        es.indices.put_settings(
-            index='webapi',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                        }
-                    }
-                }
-            )
-        es.indices.open(index='webapi')
+    indexer = utils.ElasticsearchIndexer('webapi')
 
     root = os.path.join(os.path.dirname(__file__), 'data_sources/DB')
     for path, _, files in os.walk(root):
@@ -55,8 +35,8 @@ def indexing_pipeline():
                 "logo": record["Logo"]
                 }
 
-            es.index(index="webapi", id=uuid.uuid4(), body=newRecord)
-            es.indices.refresh(index="webapi")
+            indexer.es.index(index="webapi", id=uuid.uuid4(), body=newRecord)
+            indexer.es.indices.refresh(index="webapi")
 
 
 if __name__ == '__main__':

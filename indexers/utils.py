@@ -2,6 +2,7 @@ import os
 import json
 import time
 from elasticsearch import Elasticsearch
+from elasticsearch_dsl import Index
 import dotenv
 
 
@@ -50,3 +51,28 @@ def create_es_client() -> Elasticsearch:
         raise ValueError('[Elasticsearch] could not connect to server')
     print(f'[Elasticsearch] connected to {elasticsearch_hostname}')
     return es
+
+
+class ElasticsearchIndexer:
+
+    def __init__(self, index_name):
+        self.es = create_es_client()
+        self.index_name = index_name
+        self.index = self.initialize_index(self.index_name)
+
+    @staticmethod
+    def _apply_index_settings(index):
+        index.settings(
+            index={'mapping': {'ignore_malformed': True}}
+            )
+
+    def initialize_index(self, index_name):
+        index = Index(index_name, self.es)
+        if not index.exists():
+            self._apply_index_settings(index)
+            index.create()
+        else:
+            index.close()
+            self._apply_index_settings(index)
+            index.open()
+        return index

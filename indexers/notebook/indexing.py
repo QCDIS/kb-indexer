@@ -82,33 +82,22 @@ class ElasticsearchIndexer():
         When indexing raw notebooks, it requires a `kaggle_raw_notebooks.csv` file placed under `notebook_path`
         '''
         index_name = self.index_name
-        es = self.es
-        index = Index(index_name, es)
-        if reindex:
-            index.delete(ignore=[400, 404])
-        if es.indices.exists(index=index_name):
-            print(f'\n{index_name} already exists!\n')
-            return True
-        else:
-            index.settings(
-                index={'mapping': {'ignore_malformed': True}}
-                )
-            index.create()
+        indexer = utils.ElasticsearchIndexer(self.index_name)
 
-            # Call Elasticsearch to index the files
-            indexfiles = self.generate_index_files()
-            for count, record in enumerate(indexfiles):
-                try:
-                    es.index(
-                        index=index_name,
-                        id=record[self.id_key],
-                        body=record,
-                        )
-                    print(f'Indexing {str(count + 1)}-th notebook!\n')
-                except Exception as e:
-                    print(e, "\n")
-                    print(record["docid"])
-                es.indices.refresh(index=index_name)
+        # Call Elasticsearch to index the files
+        indexfiles = self.generate_index_files()
+        for count, record in enumerate(indexfiles):
+            try:
+                indexer.es.index(
+                    index=index_name,
+                    id=record[self.id_key],
+                    body=record,
+                    )
+                print(f'Indexing {str(count + 1)}-th notebook!\n')
+            except Exception as e:
+                print(e, "\n")
+                print(record["docid"])
+            indexer.es.indices.refresh(index=index_name)
         return True
 
 
