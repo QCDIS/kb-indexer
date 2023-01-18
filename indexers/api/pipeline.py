@@ -35,8 +35,7 @@ def indexing_pipeline():
                 "logo": record["Logo"]
                 }
 
-            indexer.es.index(index="webapi", id=uuid.uuid4(), body=newRecord)
-            indexer.es.indices.refresh(index="webapi")
+            indexer.ingest_record(uuid.uuid4(), newRecord)
 
 
 if __name__ == '__main__':

@@ -1353,11 +1353,9 @@ def Run_indexingPipeline_ingest_indexFiles():
     indexed = 0
     for i in range(len(filelist)):
         doc = open_file(filelist[i])
-        id = doc["url"]
         print(round(((i + 1) / len(filelist) * 100), 2), "%", filelist[i])  # keep track of progress / counter
         indexed += 1
-        res = indexer.es.index(index="envri", id=doc["url"], body=doc)
-        indexer.es.indices.refresh(index="envri")
+        indexer.ingest_record(doc['url'], doc)
     deleteAllIndexFilesByExtension(".json")
 # ----------------------------------------------------------------
 def open_file(file):

@@ -103,3 +103,16 @@ class ElasticsearchIndexer:
             )
         num_hits = response['hits']['total']['value']
         return num_hits > 0
+
+    def ingest_record(self, record_id: str, record: dict):
+        """ Index record into elasticsearch
+
+        :param record: record to index
+        :param record_id: id of the index entry
+        """
+        self.es.index(
+            index=self.index_name,
+            id=record_id,
+            body=record,
+            )
+        self.index.refresh()

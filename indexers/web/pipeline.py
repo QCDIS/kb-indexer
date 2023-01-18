@@ -394,10 +394,7 @@ def if_URL_exist(url):
 #-----------------------------------------------------------------------------------------------------------------------
 def ingest_metadataFile(metadataFile):
     indexer = utils.ElasticsearchIndexer('webcontents')
-
-    id = metadataFile["url"]
-    res = indexer.es.index(index="webcontents", id=id, body=metadataFile)
-    indexer.es.indices.refresh(index="webcontents")
+    indexer.ingest_record(metadataFile["url"], metadataFile)
 
 #-----------------------------------------------------------------------------------------------------------------------
 def envriCrawler():
