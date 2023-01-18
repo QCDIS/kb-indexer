@@ -1,13 +1,11 @@
 from elasticsearch_dsl import Index
-import json
 import os
-import time
 
 import pandas as pd
 
 from elasticsearch import Elasticsearch
 
-from . import utils
+from .. import utils
 
 
 # ----------------------------------------------------------------------------------
@@ -118,18 +116,7 @@ class ElasticsearchIndexer():
 
 
 def main():
-    # Try to reconnect to Elasticsearch for 10 times when failing
-    # This is useful when Elasticsearch service is not fully online,
-    # which usually happens when starting all services at once.
-    for i in range(100):
-        es = utils.create_es_client()
-        if es == None:
-            time.sleep(0.5)
-            continue
-        else:
-            break
-    if es is None:
-        raise ValueError('could not connect to elasticsearch')
+    es = utils.create_es_client()
 
     indexer = ElasticsearchIndexer(
         es=es,

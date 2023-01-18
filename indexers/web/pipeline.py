@@ -14,8 +14,10 @@ from collections import Counter
 import en_core_web_sm
 import lxml.html
 import validators
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Index
+
+from .. import utils
+
 nlp = en_core_web_sm.load()
 #-----------------------------------------------------------------------------------------------------------------------
 # init the colorama module
@@ -386,7 +388,7 @@ def indexWebsite(url):
                 print("Metadata ingested ("+str(cnt)+")\n")
 #-----------------------------------------------------------------------------------------------------------------------
 def if_URL_exist(url):
-    es = Elasticsearch("http://localhost:9200")
+    es = utils.create_es_client()
     index = Index('webcontents', es)
 
     if not es.indices.exists(index='webcontents'):
@@ -426,7 +428,7 @@ def if_URL_exist(url):
     return True if numHits>0 else False
 #-----------------------------------------------------------------------------------------------------------------------
 def ingest_metadataFile(metadataFile):
-    es = Elasticsearch("http://localhost:9200")
+    es = utils.create_es_client()
     index = Index('webcontents', es)
 
     if not es.indices.exists(index='webcontents'):

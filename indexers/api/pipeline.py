@@ -1,9 +1,9 @@
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Index
 import os
 import json
 import uuid
 
+from .. import utils
 
 def open_file(file):
     read_path = file
@@ -14,7 +14,7 @@ def open_file(file):
 
 
 def indexing_pipeline():
-    es = Elasticsearch("http://localhost:9200")
+    es = utils.create_es_client()
     index = Index('webapi', es)
 
     if not es.indices.exists(index='webapi'):

@@ -1,5 +1,4 @@
 from datetime import datetime
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Index
 import json
 import shlex
@@ -35,6 +34,8 @@ import csv
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+
+from .. import utils
 
 from .web_crawler import Crawler
 from . import synonyms
@@ -1343,7 +1344,7 @@ def saveSelectedURLs(lstDataset, datasetTitle):
 # if index exists, change settings
 
 def Run_indexingPipeline_ingest_indexFiles():
-    es = Elasticsearch("http://localhost:9200")
+    es = utils.create_es_client()
     index = Index('envri', es)
 
     if not es.indices.exists(index='envri'):
@@ -1465,7 +1466,7 @@ def deleteAllIndexFilesByExtension(extension):
         os.remove(path_to_file)
 # ----------------------------------------------------------------------
 def if_URL_exist(url):
-    es = Elasticsearch("http://localhost:9200")
+    es = utils.create_es_client()
     index = Index('envri', es)
 
     if not es.indices.exists(index='envri'):

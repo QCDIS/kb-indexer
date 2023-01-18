@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from elasticsearch import Elasticsearch
 import dotenv
 
@@ -23,8 +24,7 @@ def create_es_client() -> Elasticsearch:
         es: an elasticsearch client.
 
     """
-    valid_es = None
-    dotenv.load_dotenv(os.path.join(os.getcwd(), '.env'))
+    dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
     elasticsearch_hostname = os.environ.get('ELASTICSEARCH_HOSTNAME')
     elasticsearch_port = os.environ.get('ELASTICSEARCH_PORT')
     elasticsearch_username = os.environ.get('ELASTICSEARCH_USERNAME')
@@ -36,11 +36,17 @@ def create_es_client() -> Elasticsearch:
         tim_out=30
         )
 
-    connected = es.ping()
-    if connected:
-        print(f'\n[Elasticsearch] `{elasticsearch_hostname}` being connected\n')
-        valid_es = es
-    if valid_es == None:
-        print(f'\n[Elasticsearch] data server is NOT ready yet!\n')
-        # If there is no connection.
-    return valid_es
+    # Try to reconnect to Elasticsearch for 10 times when failing
+    # This is useful when Elasticsearch service is not fully online,
+    # which usually happens when starting all services at once.
+    for i in range(50):
+        if not es.ping():
+            time.sleep(1)
+            print('[Elasticsearch] waiting for server')
+            continue
+        else:
+            break
+    if not es.ping():
+        raise ValueError('[Elasticsearch] could not connect to server')
+    print(f'[Elasticsearch] connected to {elasticsearch_hostname}')
+    return es
