@@ -76,3 +76,30 @@ class ElasticsearchIndexer:
             self._apply_index_settings(index)
             index.open()
         return index
+
+    def is_in_index(self, field_name, value) -> bool:
+        """ Check if the index contains an entry with <field_name> = <value>
+
+        :param field_name: name of the field to check
+        :param value: value to match
+        :return: True if an entry is found, False otherwise
+        """
+        query = {
+            "query": {
+                "bool": {
+                    "must": [{
+                        "match_phrase": {
+                            field_name: value,
+                            }
+                        }]
+                    }
+                },
+            "from": 0,
+            "size": 1
+            }
+        response = self.es.search(
+            index=self.index_name,
+            body=query,
+            )
+        num_hits = response['hits']['total']['value']
+        return num_hits > 0

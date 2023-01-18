@@ -1448,24 +1448,7 @@ def deleteAllIndexFilesByExtension(extension):
 # ----------------------------------------------------------------------
 def if_URL_exist(url):
     indexer = utils.ElasticsearchIndexer('envri')
-
-    user_request = "some_param"
-    query_body = {
-        "query": {
-            "bool": {
-                "must": [{
-                    "match_phrase": {
-                        "url": url
-                    }
-                }]
-            }
-        },
-        "from": 0,
-        "size": 1
-    }
-    result = indexer.es.search(index="envri", body=query_body)
-    numHits=result['hits']['total']['value']
-    return True if numHits>0 else False
+    return indexer.is_in_index('url', url)
 
 
 def main():
