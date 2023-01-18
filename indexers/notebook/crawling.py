@@ -316,9 +316,9 @@ class GithubNotebookCrawler(_NotebookCrawler):
             self._api_token = f.read().strip()
 
     @staticmethod
-    def _wait_for_available_rate(rate):
-        while rate.remaining <= 0:
-            print('API rate exceeded, waiting', rate)
+    def _wait_for_available_search_rate(g):
+        while g.get_rate_limit().search.remaining <= 0:
+            print('API rate exceeded, waiting')
             time.sleep(10)
 
     def search(self, query: str, page_range: int) -> pd.DataFrame:
@@ -326,15 +326,22 @@ class GithubNotebookCrawler(_NotebookCrawler):
         query += ' in:readme in:description in:topics'
 
         g = Github(self._api_token)
-        for page in range(1, page_range + 1):
-            self._wait_for_available_rate(g.get_rate_limit().search)
-            result = g.search_repositories(
-                query,
-                sort='stars',
-                order='desc',
-                )
-            data = []
-            for i, repo in enumerate(result):
+        self._wait_for_available_search_rate(g)
+        result = g.search_repositories(
+            query,
+            sort='stars',
+            order='desc',
+            )
+        data = []
+        results_per_page = 30  # from API documentation
+        pages_with_results = (
+            (result.totalCount // results_per_page)
+            + int(bool(result.totalCount % results_per_page))
+            )
+        for page in range(min(page_range, pages_with_results)):
+            self._wait_for_available_search_rate(g)
+            page_result = result.get_page(page)
+            for i, repo in enumerate(page_result):
                 new_record = {
                     'query': query,
                     "id": i,
@@ -350,7 +357,6 @@ class GithubNotebookCrawler(_NotebookCrawler):
                     }
                 if new_record not in data:
                     data.append(new_record)
-                self._wait_for_available_rate(g.get_rate_limit().search)
         return pd.DataFrame(data)
 
     def download(self, metadata: pd.Series) -> bool:
