@@ -19,13 +19,16 @@ def read_json_file(file):
     return data
 
 
+def load_dotenv():
+    dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+
 def create_es_client() -> Elasticsearch:
     """ Create an Elasticsearch client based on the IP addresses/hostname.
     Returns:
         es: an elasticsearch client.
 
     """
-    dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
     elasticsearch_host = os.environ.get('ELASTICSEARCH_HOST')
     elasticsearch_username = os.environ.get('ELASTICSEARCH_USERNAME')
     elasticsearch_password = os.environ.get('ELASTICSEARCH_PASSWORD')
