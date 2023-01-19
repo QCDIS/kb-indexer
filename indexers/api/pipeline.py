@@ -1,9 +1,9 @@
-from elasticsearch_dsl import Index
 import os
 import json
-import uuid
+import hashlib
 
 from .. import utils
+
 
 def open_file(file):
     read_path = file
@@ -21,7 +21,7 @@ def indexing_pipeline():
         for name in files:
             record = os.path.join(path, name)
             record = open_file(record)
-            newRecord = {
+            index_record = {
                 "name": record["API name"],
                 "description": record["Description"],
                 "url": record["Url"],
@@ -35,7 +35,11 @@ def indexing_pipeline():
                 "logo": record["Logo"]
                 }
 
-            indexer.ingest_record(uuid.uuid4(), newRecord)
+            id_ = hashlib.md5(
+                json.dumps(index_record, sort_keys=True).encode('utf-8')
+                ).hexdigest()
+
+            indexer.ingest_record(id_, index_record)
 
 
 if __name__ == '__main__':
