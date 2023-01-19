@@ -26,13 +26,12 @@ def create_es_client() -> Elasticsearch:
 
     """
     dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-    elasticsearch_hostname = os.environ.get('ELASTICSEARCH_HOSTNAME')
-    elasticsearch_port = os.environ.get('ELASTICSEARCH_PORT')
+    elasticsearch_host = os.environ.get('ELASTICSEARCH_HOST')
     elasticsearch_username = os.environ.get('ELASTICSEARCH_USERNAME')
     elasticsearch_password = os.environ.get('ELASTICSEARCH_PASSWORD')
 
     es = Elasticsearch(
-        hosts=[{"host": elasticsearch_hostname, "port": elasticsearch_port}],
+        hosts=[elasticsearch_host],
         http_auth=[elasticsearch_username, elasticsearch_password],
         tim_out=30
         )
@@ -49,7 +48,7 @@ def create_es_client() -> Elasticsearch:
             break
     if not es.ping():
         raise ValueError('[Elasticsearch] could not connect to server')
-    print(f'[Elasticsearch] connected to {elasticsearch_hostname}')
+    print(f'[Elasticsearch] connected to {elasticsearch_host}')
     return es
 
 
