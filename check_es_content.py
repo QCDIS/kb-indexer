@@ -1,5 +1,7 @@
 from typing import List
 
+from elasticsearch.exceptions import AuthorizationException
+
 from indexers import utils
 
 
@@ -8,11 +10,14 @@ def list_indices(es):
     if not indices:
         print('No indices found')
     for index_name in indices:
-        es.indices.open(index=index_name)
-        print(
-            index_name,
-            es.count(index=index_name)["count"],
-            )
+        try:
+            es.indices.open(index=index_name)
+            print(
+                index_name,
+                es.count(index=index_name)["count"],
+                )
+        except AuthorizationException as e:
+            print(f'could not open index {index_name} ({e})')
 
 
 class _GenericSearch:
