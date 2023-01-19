@@ -388,7 +388,7 @@ def indexWebsite(url):
                 print("Metadata ingested ("+str(cnt)+")\n")
 #-----------------------------------------------------------------------------------------------------------------------
 def if_URL_exist(url):
-    indexer = utils.ElasticsearchIndexer('envri')
+    indexer = utils.ElasticsearchIndexer('webcontents')
     return indexer.is_in_index('url', url)
 
 #-----------------------------------------------------------------------------------------------------------------------
