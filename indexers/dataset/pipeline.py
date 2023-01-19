@@ -1355,7 +1355,8 @@ def Run_indexingPipeline_ingest_indexFiles():
         doc = open_file(filelist[i])
         print(round(((i + 1) / len(filelist) * 100), 2), "%", filelist[i])  # keep track of progress / counter
         indexed += 1
-        indexer.ingest_record(doc['url'], doc)
+        id_ = utils.gen_id_from_url(doc['url'])
+        indexer.ingest_record(id_, doc)
     deleteAllIndexFilesByExtension(".json")
 # ----------------------------------------------------------------
 def open_file(file):

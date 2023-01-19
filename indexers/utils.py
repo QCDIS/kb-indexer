@@ -23,6 +23,14 @@ def load_dotenv():
     dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 
+def gen_id_from_url(url):
+    if type(url) in (list, tuple):
+        if len(url) != 1:
+            raise ValueError(f'one url must be provided {url}')
+        url = url[0]
+    return url.replace('/', '_')
+
+
 def create_es_client() -> Elasticsearch:
     """ Create an Elasticsearch client based on the IP addresses/hostname.
     Returns:
