@@ -14,8 +14,10 @@ from collections import Counter
 import en_core_web_sm
 import lxml.html
 import validators
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search, Index
+from elasticsearch_dsl import Index
+
+from .. import utils
+
 nlp = en_core_web_sm.load()
 #-----------------------------------------------------------------------------------------------------------------------
 # init the colorama module
@@ -386,70 +388,14 @@ def indexWebsite(url):
                 print("Metadata ingested ("+str(cnt)+")\n")
 #-----------------------------------------------------------------------------------------------------------------------
 def if_URL_exist(url):
-    es = Elasticsearch("http://localhost:9200")
-    index = Index('webcontents', es)
+    indexer = utils.ElasticsearchIndexer('webcontents')
+    return indexer.is_in_index('url', url)
 
-    if not es.indices.exists(index='webcontents'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='webcontents')
-        put = es.indices.put_settings(
-            index='webcontents',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='webcontents')
-
-    user_request = "some_param"
-    query_body = {
-        "query": {
-            "bool": {
-                "must": [{
-                    "match_phrase": {
-                        "url": url
-                    }
-                }]
-            }
-        },
-        "from": 0,
-        "size": 1
-    }
-    result = es.search(index="webcontents", body=query_body)
-    numHits=result['hits']['total']['value']
-    return True if numHits>0 else False
 #-----------------------------------------------------------------------------------------------------------------------
 def ingest_metadataFile(metadataFile):
-    es = Elasticsearch("http://localhost:9200")
-    index = Index('webcontents', es)
-
-    if not es.indices.exists(index='webcontents'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='webcontents')
-        put = es.indices.put_settings(
-            index='webcontents',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='webcontents')
-
-        id = metadataFile["url"]
-        res = es.index(index="webcontents", id=id, body=metadataFile)
-        es.indices.refresh(index="webcontents")
+    indexer = utils.ElasticsearchIndexer('webcontents')
+    id_ = utils.gen_id_from_url(metadataFile['url'])
+    indexer.ingest_record(id_, metadataFile)
 
 #-----------------------------------------------------------------------------------------------------------------------
 def envriCrawler():

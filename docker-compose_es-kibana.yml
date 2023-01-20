@@ -1,0 +1,32 @@
+services:
+  elasticsearch: 
+    build: ./elasticsearch
+    image: local_test/elasticsearch
+    container_name: local_test_elasticsearch
+#    volumes:
+#      - ./elasticsearch/data:/usr/share/elasticsearch/data
+#      - ./elasticsearch/logs:/usr/share/elasticsearch/logs
+    environment:
+      - discovery.type=single-node
+      - cluster.name=es_dataserver
+      - node.name=es01
+      - TAKE_FILE_OWNERSHIP=true
+    ports:
+      - 9200:9200
+    networks:
+      - es-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.6
+    container_name: kibana
+    environment:
+      - "ELASTICSEARCH_URL=http://elasticsearch:9200"
+    ports:
+      - 5601:5601
+    networks:
+      - es-net
+    depends_on:
+      - elasticsearch
+
+networks:
+  es-net:

@@ -1,13 +1,12 @@
 from elasticsearch_dsl import Index
-import json
 import os
-import time
 
 import pandas as pd
+from tqdm import tqdm
 
 from elasticsearch import Elasticsearch
 
-from . import utils
+from .. import utils
 
 
 # ----------------------------------------------------------------------------------
@@ -38,9 +37,9 @@ class ElasticsearchIndexer():
             f'data/{self.source_name}/notebook_lists',
             )
         if doc_type == 'raw':
-            source_file_name = 'updated_processed_notebooks.csv'
-        elif doc_type == 'preprocessed':
             source_file_name = 'raw_notebooks.csv'
+        elif doc_type == 'preprocessed':
+            source_file_name = 'updated_processed_notebooks.csv'
         else:
             raise ValueError(f'unknown doc_type: {doc_type}')
         self.source_file_name = os.path.join(
@@ -74,6 +73,11 @@ class ElasticsearchIndexer():
             indexfiles = df_notebooks.to_dict('records')
         else:
             print("Notebook type is unknown, please specify a doc_type.")
+        # replace nan values with None
+        for record in indexfiles:
+            for k, v in record.items():
+                if pd.isna(v):
+                    record[k] = None
         return indexfiles
 
     def index_notebooks(self, reindex=False):
@@ -83,34 +87,12 @@ class ElasticsearchIndexer():
 
         When indexing raw notebooks, it requires a `kaggle_raw_notebooks.csv` file placed under `notebook_path`
         '''
-        index_name = self.index_name
-        es = self.es
-        index = Index(index_name, es)
-        if reindex:
-            index.delete(ignore=[400, 404])
-        if es.indices.exists(index=index_name):
-            print(f'\n{index_name} already exists!\n')
-            return True
-        else:
-            index.settings(
-                index={'mapping': {'ignore_malformed': True}}
-                )
-            index.create()
+        indexer = utils.ElasticsearchIndexer(self.index_name)
 
-            # Call Elasticsearch to index the files
-            indexfiles = self.generate_index_files()
-            for count, record in enumerate(indexfiles):
-                try:
-                    es.index(
-                        index=index_name,
-                        id=record[self.id_key],
-                        body=record,
-                        )
-                    print(f'Indexing {str(count + 1)}-th notebook!\n')
-                except Exception as e:
-                    print(e, "\n")
-                    print(record["docid"])
-                es.indices.refresh(index=index_name)
+        # Call Elasticsearch to index the files
+        indexfiles = self.generate_index_files()
+        for record in tqdm(indexfiles, desc='Indexing notebooks'):
+            indexer.ingest_record(record[self.id_key], record)
         return True
 
 
@@ -118,18 +100,7 @@ class ElasticsearchIndexer():
 
 
 def main():
-    # Try to reconnect to Elasticsearch for 10 times when failing
-    # This is useful when Elasticsearch service is not fully online,
-    # which usually happens when starting all services at once.
-    for i in range(100):
-        es = utils.create_es_client()
-        if es == None:
-            time.sleep(0.5)
-            continue
-        else:
-            break
-    if es is None:
-        raise ValueError('could not connect to elasticsearch')
+    es = utils.create_es_client()
 
     indexer = ElasticsearchIndexer(
         es=es,

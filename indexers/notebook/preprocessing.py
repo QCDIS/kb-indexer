@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from tqdm import tqdm
 
-from . import utils
+from .. import utils
 
 def list2str(l):
     ''' Convert a list of list str to str using recursive function.  

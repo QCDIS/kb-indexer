@@ -1,6 +1,5 @@
 from datetime import datetime
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search, Index
+from elasticsearch_dsl import Index
 import json
 import shlex
 import subprocess
@@ -35,6 +34,8 @@ import csv
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+
+from .. import utils
 
 from .web_crawler import Crawler
 from . import synonyms
@@ -1343,26 +1344,7 @@ def saveSelectedURLs(lstDataset, datasetTitle):
 # if index exists, change settings
 
 def Run_indexingPipeline_ingest_indexFiles():
-    es = Elasticsearch("http://localhost:9200")
-    index = Index('envri', es)
-
-    if not es.indices.exists(index='envri'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='envri')
-        put = es.indices.put_settings(
-            index='envri',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='envri')
+    indexer = utils.ElasticsearchIndexer('envri')
 
     # path is correct IF this file is in the same folder as 'envri_json'
     indexfnames = os.path.join(indexFiles_root)
@@ -1371,11 +1353,10 @@ def Run_indexingPipeline_ingest_indexFiles():
     indexed = 0
     for i in range(len(filelist)):
         doc = open_file(filelist[i])
-        id = doc["url"]
         print(round(((i + 1) / len(filelist) * 100), 2), "%", filelist[i])  # keep track of progress / counter
         indexed += 1
-        res = es.index(index="envri", id=doc["url"], body=doc)
-        es.indices.refresh(index="envri")
+        id_ = utils.gen_id_from_url(doc['url'])
+        indexer.ingest_record(id_, doc)
     deleteAllIndexFilesByExtension(".json")
 # ----------------------------------------------------------------
 def open_file(file):
@@ -1465,44 +1446,8 @@ def deleteAllIndexFilesByExtension(extension):
         os.remove(path_to_file)
 # ----------------------------------------------------------------------
 def if_URL_exist(url):
-    es = Elasticsearch("http://localhost:9200")
-    index = Index('envri', es)
-
-    if not es.indices.exists(index='envri'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-        )
-        index.create()
-    else:
-        es.indices.close(index='envri')
-        put = es.indices.put_settings(
-            index='envri',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                    }
-                }
-            })
-        es.indices.open(index='envri')
-
-    user_request = "some_param"
-    query_body = {
-        "query": {
-            "bool": {
-                "must": [{
-                    "match_phrase": {
-                        "url": url
-                    }
-                }]
-            }
-        },
-        "from": 0,
-        "size": 1
-    }
-    result = es.search(index="envri", body=query_body)
-    numHits=result['hits']['total']['value']
-    return True if numHits>0 else False
+    indexer = utils.ElasticsearchIndexer('envri')
+    return indexer.is_in_index('url', url)
 
 
 def main():

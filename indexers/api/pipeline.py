@@ -1,8 +1,8 @@
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Index
 import os
 import json
-import uuid
+import hashlib
+
+from .. import utils
 
 
 def open_file(file):
@@ -14,34 +14,14 @@ def open_file(file):
 
 
 def indexing_pipeline():
-    es = Elasticsearch("http://localhost:9200")
-    index = Index('webapi', es)
-
-    if not es.indices.exists(index='webapi'):
-        index.settings(
-            index={'mapping': {'ignore_malformed': True}}
-            )
-        index.create()
-    else:
-        es.indices.close(index='webapi')
-        es.indices.put_settings(
-            index='webapi',
-            body={
-                "index": {
-                    "mapping": {
-                        "ignore_malformed": True
-                        }
-                    }
-                }
-            )
-        es.indices.open(index='webapi')
+    indexer = utils.ElasticsearchIndexer('webapi')
 
     root = os.path.join(os.path.dirname(__file__), 'data_sources/DB')
     for path, _, files in os.walk(root):
         for name in files:
             record = os.path.join(path, name)
             record = open_file(record)
-            newRecord = {
+            index_record = {
                 "name": record["API name"],
                 "description": record["Description"],
                 "url": record["Url"],
@@ -55,8 +35,11 @@ def indexing_pipeline():
                 "logo": record["Logo"]
                 }
 
-            es.index(index="webapi", id=uuid.uuid4(), body=newRecord)
-            es.indices.refresh(index="webapi")
+            id_ = hashlib.md5(
+                json.dumps(index_record, sort_keys=True).encode('utf-8')
+                ).hexdigest()
+
+            indexer.ingest_record(id_, index_record)
 
 
 if __name__ == '__main__':
