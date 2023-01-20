@@ -1,9 +1,11 @@
-from . import crawling
+from . import searching
+from . import downloading
 from . import preprocessing
 from . import indexing
 
 
 if __name__ == '__main__':
-    crawling.main()
+    searching.main()
+    downloading.main()
     preprocessing.main()
     indexing.main()
