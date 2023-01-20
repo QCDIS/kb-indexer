@@ -36,9 +36,9 @@ class ElasticsearchIndexer():
             f'data/{self.source_name}/notebook_lists',
             )
         if doc_type == 'raw':
-            source_file_name = 'updated_processed_notebooks.csv'
-        elif doc_type == 'preprocessed':
             source_file_name = 'raw_notebooks.csv'
+        elif doc_type == 'preprocessed':
+            source_file_name = 'updated_processed_notebooks.csv'
         else:
             raise ValueError(f'unknown doc_type: {doc_type}')
         self.source_file_name = os.path.join(
