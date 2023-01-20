@@ -2,6 +2,7 @@ from elasticsearch_dsl import Index
 import os
 
 import pandas as pd
+from tqdm import tqdm
 
 from elasticsearch import Elasticsearch
 
@@ -72,6 +73,11 @@ class ElasticsearchIndexer():
             indexfiles = df_notebooks.to_dict('records')
         else:
             print("Notebook type is unknown, please specify a doc_type.")
+        # replace nan values with None
+        for record in indexfiles:
+            for k, v in record.items():
+                if pd.isna(v):
+                    record[k] = None
         return indexfiles
 
     def index_notebooks(self, reindex=False):
@@ -85,8 +91,7 @@ class ElasticsearchIndexer():
 
         # Call Elasticsearch to index the files
         indexfiles = self.generate_index_files()
-        for count, record in enumerate(indexfiles):
-            print(f'Indexing {str(count + 1)}-th notebook!\n')
+        for record in tqdm(indexfiles, desc='Indexing notebooks'):
             indexer.ingest_record(record[self.id_key], record)
         return True
 
