@@ -311,9 +311,7 @@ class GithubNotebookCrawler(_NotebookCrawler):
         self._init_api_token()
 
     def _init_api_token(self):
-        token_file = os.path.join(os.path.expanduser('~/.github/token'))
-        with open(token_file, 'r') as f:
-            self._api_token = f.read().strip()
+        self._api_token = os.environ['GITHUB_API_TOKEN']
 
     @staticmethod
     def _wait_for_available_search_rate(g):
