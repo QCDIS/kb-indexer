@@ -115,7 +115,7 @@ def main():
     s = KaggleNotebookDownloader()
     s.bulk_download()
 
-    # s = GithubNotebookDownloader()
+    s = GithubNotebookDownloader()
     s.bulk_download()
 
 

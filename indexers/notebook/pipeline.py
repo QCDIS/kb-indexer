@@ -6,6 +6,6 @@ from . import indexing
 
 if __name__ == '__main__':
     searching.main()
-    downloading.main()
-    preprocessing.main()
+    # downloading.main()
+    # preprocessing.main()
     indexing.main()

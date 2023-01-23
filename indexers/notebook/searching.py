@@ -159,11 +159,11 @@ def main():
         )
     queries = df_queries['queries'].values
 
-    # s = KaggleNotebookSearcher()
-    # s.bulk_search(queries, page_range=1)
+    s = KaggleNotebookSearcher()
+    s.bulk_search(queries, page_range=10)
 
     s = GithubNotebookSearcher()
-    s.bulk_search(queries, page_range=1)
+    s.bulk_search(queries, page_range=10)
 
 
 if __name__ == '__main__':
