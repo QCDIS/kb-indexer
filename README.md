@@ -5,7 +5,7 @@
 Install language processing data:
 
 ```shell
-python -m spacy download en 
+python -m spacy download en_core_web_sm
 python -m spacy download en_core_web_md
 python -m nltk.downloader omw-1.4
 ```
