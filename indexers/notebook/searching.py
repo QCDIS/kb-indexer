@@ -84,7 +84,7 @@ class KaggleNotebookSearcher(_NotebookSearcher):
                 'size': None,
                 'language': kernel.language,
                 'html_url': 'https://www.kaggle.com/code/' + kernel.ref,
-                'git_url': None,
+                'git_url': 'https://www.kaggle.com/code/' + kernel.ref,
                 'source': self.source_name,
                 'query': query,
                 })
