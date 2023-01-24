@@ -1,191 +1,205 @@
 {
   "icos-cp.eu": {
     "id": 1,
-    "url":"https://www.icos-cp.eu/",
+    "url": "https://www.icos-cp.eu/",
     "domain": "Multi-domain",
     "title": "Integrated Carbon Observation System",
-    "acronym":"ICOS"
+    "acronym": "ICOS"
   },
   "seadatanet.org": {
     "id": 2,
-    "url":"https://www.seadatanet.org/",
+    "url": "https://www.seadatanet.org/",
     "domain": "Marine",
     "title": "Pan-European infrastructure for ocean and marine data management",
-    "acronym":"SeaDataNet"
+    "acronym": "SeaDataNet"
   },
   "lifewatch.eu": {
     "id": 3,
-    "url":"https://www.lifewatch.eu/",
+    "url": "https://www.lifewatch.eu/",
     "domain": "Multi-domain",
     "title": "An e-Infrastructure for basic research on biodiversity and ecosystems",
-    "acronym":"LifeWatch"
+    "acronym": "LifeWatch"
   },
-  "anaee.eu":{
+  "anaee.eu": {
     "id": 4,
-    "url":"https://www.anaee.eu/",
+    "url": "https://www.anaee.eu/",
     "domain": "Terrestrial ecosystem / Biodiversity",
     "title": "Analysis and Experimentation on Ecosystems",
-    "acronym":"AnaEE"
+    "acronym": "AnaEE"
   },
-  "actris.eu":{
+  "actris.eu": {
     "id": 5,
-    "url":"https://www.actris.eu/",
+    "url": "https://www.actris.eu/",
     "domain": "Atmospheric",
     "title": "The Aerosol, Clouds and Trace Gases Research Infrastructure",
-    "acronym":"ACTRIS"
+    "acronym": "ACTRIS"
   },
-  "aquacosm.eu":{
+  "aquacosm.eu": {
     "id": 6,
-    "url":"https://www.aquacosm.eu/",
+    "url": "https://www.aquacosm.eu/",
     "domain": "Marine / Freshwater",
     "title": "EU network of mesocosms facilities for research on marine and freshwater",
-    "acronym":"AQUACOSM"
+    "acronym": "AQUACOSM"
   },
-  "arise-project.eu":{
+  "arise-project.eu": {
     "id": 7,
-    "url":"http://arise-project.eu/",
+    "url": "http://arise-project.eu/",
     "domain": "Atmosphere",
     "title": "Atmospheric dynamics Research InfraStructure in Europe",
-    "acronym":"ARISE"
+    "acronym": "ARISE"
   },
-  "danubius-pp.eu":{
+  "danubius-pp.eu": {
     "id": 8,
-    "url":"https://danubius-pp.eu/",
+    "url": "https://www.danubius-ri.eu/",
     "domain": "River / Marine",
     "title": "Preparatory Phase For The Paneuropean Research Infrastructure",
-    "acronym":"DANUBIUS-RI"
+    "acronym": "DANUBIUS-RI"
   },
-  "dissco.eu":{
+  "dissco.eu": {
     "id": 9,
-    "url":"https://www.dissco.eu/",
+    "url": "https://www.dissco.eu/",
     "domain": "Terrestrial ecosystem / Biodiversity",
     "title": "Distributed System of Scientific Collections",
-    "acronym":"DiSSCo"
+    "acronym": "DiSSCo"
   },
-  "eiscat.se":{
+  "eiscat.se": {
     "id": 10,
-    "url":"https://eiscat.se/",
+    "url": "https://eiscat.se/",
     "domain": "Atmospheric",
     "title": "EISCAT Scientific Association",
-    "acronym":"EISCAT 3D"
+    "acronym": "EISCAT 3D"
   },
-  "elter-ri.eu":{
+  "elter-ri.eu": {
     "id": 11,
-    "url":"https://elter-ri.eu/",
+    "url": "https://elter-ri.eu/",
     "domain": "Biodiversity / Ecosystems",
     "title": "Long-Term Ecosystem Research in Europe",
-    "acronym":"eLTER RI"
+    "acronym": "eLTER RI"
   },
-  "embrc.eu":{
+  "embrc.eu": {
     "id": 12,
-    "url":"https://www.embrc.eu/",
+    "url": "https://www.embrc.eu/",
     "domain": "Marine / Biodiversity",
     "title": "Long-Term Ecosystem Research in Europe",
-    "acronym":"EMBRC"
+    "acronym": "EMBRC"
   },
-  "emso.eu":{
+  "emso.eu": {
     "id": 13,
-    "url":"https://emso.eu/",
+    "url": "https://emso.eu/",
     "domain": "Multi-domain",
     "title": "European Multidisciplinary Seafloor and water column Observatory",
-    "acronym":"EMSO"
+    "acronym": "EMSO"
   },
-  "emphasis.plant-phenotyping.eu":{
+  "emphasis.plant-phenotyping.eu": {
     "id": 14,
-    "url":"https://emphasis.plant-phenotyping.eu/",
+    "url": "https://emphasis.plant-phenotyping.eu/",
     "domain": "Terrestrial Ecosystem",
     "title": "European Infrastructure for Plant Phenotyping",
-    "acronym":"EMPHASIS"
+    "acronym": "EMPHASIS"
   },
-  "epos-eu.org":{
+  "epos-eu.org": {
     "id": 15,
-    "url":"https://www.epos-eu.org/",
+    "url": "https://www.epos-eu.org/",
     "domain": "Solid Earth Science",
     "title": "European Plate Observing System",
-    "acronym":"EPOS"
+    "acronym": "EPOS"
   },
-  "eufar.net":{
+  "eufar.net": {
     "id": 16,
-    "url":"https://www.eufar.net/",
+    "url": "https://www.eufar.net/",
     "domain": "Atmospheric",
     "title": "The EUropean Facility for Airborne Research",
-    "acronym":"EUFAR"
+    "acronym": "EUFAR"
   },
-  "euro-argo.eu":{
+  "euro-argo.eu": {
     "id": 17,
-    "url":"https://www.euro-argo.eu/",
+    "url": "https://www.euro-argo.eu/",
     "domain": "Marine",
     "title": "European Research Infrastructure Consortium for observing the Ocean",
-    "acronym":"Euro-Argo ERIC"
+    "acronym": "Euro-Argo ERIC"
   },
-  "eurofleet.fr":{
+  "eurofleet.fr": {
     "id": 18,
-    "url":"https://www.eurofleet.fr/",
+    "url": "https://www.eurofleets.eu/",
     "domain": "Marine",
     "title": "An alliance of European marine research infrastructure to meet the evolving needs of the research and industrial communities",
-    "acronym":"EUROFLEETS+"
+    "acronym": "EUROFLEETS+"
   },
-  "eurogoos.eu":{
+  "eurogoos.eu": {
     "id": 19,
-    "url":"https://eurogoos.eu/",
+    "url": "https://eurogoos.eu/",
     "domain": "Marine",
     "title": "European Global Ocean Observing System",
-    "acronym":"EuroGOOS"
+    "acronym": "EuroGOOS"
   },
-  "eurochamp.org":{
+  "eurochamp.org": {
     "id": 20,
-    "url":"https://www.eurochamp.org/",
+    "url": "https://www.eurochamp.org/",
     "domain": "Atmospheric",
     "title": "Integration of European Simulation Chambers for Investigating Atmospheric Processes",
-    "acronym":"EUROCHAMP"
+    "acronym": "EUROCHAMP"
   },
-  "hemera-h2020.eu":{
+  "hemera-h2020.eu": {
     "id": 21,
-    "url":"https://www.hemera-h2020.eu/",
+    "url": "https://www.hemera-h2020.eu/",
     "domain": "Atmospheric",
     "title": "Integrated access to balloon-borne platforms for innovative research and technology",
-    "acronym":"HEMERA"
+    "acronym": "HEMERA"
   },
-  "iagos.org":{
+  "iagos.org": {
     "id": 22,
-    "url":"https://www.iagos.org/",
+    "url": "https://www.iagos.org/",
     "domain": "Atmospheric",
     "title": "In Service Aircraft for a Global Observing System",
-    "acronym":"IAGOS"
+    "acronym": "IAGOS"
   },
-  "eu-interact.org":{
+  "eu-interact.org": {
     "id": 23,
-    "url":"https://eu-interact.org/",
+    "url": "https://eu-interact.org/",
     "domain": "Terrestrial Ecosystem",
     "title": "Building Capacity For Environmental Research And Monitoring In Arctic And Neighbouring Alpine And Forest Areas",
-    "acronym":"INTERACT"
+    "acronym": "INTERACT"
   },
-  "is.enes.org":{
+  "is.enes.org": {
     "id": 24,
-    "url":"https://is.enes.org/",
+    "url": "https://is.enes.org/",
     "domain": "Multi-domain",
     "title": "Infrastructure For The European Network For Earth System Modelling Enes",
-    "acronym":"IS-ENES"
+    "acronym": "IS-ENES"
   },
-  "jerico-ri.eu":{
+  "jerico-ri.eu": {
     "id": 25,
-    "url":"https://www.jerico-ri.eu/",
+    "url": "https://www.jerico-ri.eu/",
     "domain": "Marine",
     "title": "The European Integrated Infrastructure For In Situ Coastal Observation",
-    "acronym":"JERICO-RI"
+    "acronym": "JERICO-RI"
   },
-  "sios-svalbard.org":{
+  "sios-svalbard.org": {
     "id": 26,
-    "url":"https://www.sios-svalbard.org/",
+    "url": "https://www.sios-svalbard.org/",
     "domain": "Multi-domain",
     "title": "Svalbard integrated Earth observing system",
-    "acronym":"SIOS"
+    "acronym": "SIOS"
   },
-  "envri.eu":{
+  "envri.eu": {
     "id": 27,
-    "url":"https://envri.eu/",
+    "url": "https://envri.eu/",
     "domain": "Multi-domain",
     "title": "ENVRI community",
-    "acronym":"KB"
+    "acronym": "KB"
+  },
+  "groom-ri.eu": {
+    "id": 28,
+    "url": "https://www.groom-ri.eu/",
+    "domain": "Marine",
+    "title": "Gliders for Research, Ocean Observation and Management",
+    "acronym": "GROOM-RI"
+  },
+  "cetaf.org": {
+    "id": 29,
+    "url": "https://cetaf.org/",
+    "domain": "Biodiversity",
+    "title": "Consortium of European Taxonomic Facilities",
+    "acronym": "CETAF"
   }
 }
