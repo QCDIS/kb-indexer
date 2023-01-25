@@ -435,6 +435,9 @@ class DatasetIndexer:
         self.deleteAllIndexFilesByExtension(".json")
 
     def Run_indexingPipeline(self):
+        self.deleteAllIndexFilesByExtension(".json")
+        self.deleteAllIndexFilesByExtension(".csv")
+
         print(f'indexing the {self.source_name} dataset repository')
         self.getDatasetRecords()
 
