@@ -12,6 +12,7 @@ from gensim import corpora
 import enchant
 from fuzzywuzzy import fuzz
 import urllib.request
+import urllib.error
 import json
 from lxml.etree import fromstring
 from xml.etree import ElementTree
@@ -457,8 +458,12 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
         indexFile = open(indexfname, "w")
         indexFile.write("{\n")
 
-        with urllib.request.urlopen(datasetURL) as f:
-            data = f.read().decode('utf-8')
+        try:
+            with urllib.request.urlopen(datasetURL) as f:
+                data = f.read().decode('utf-8')
+        except urllib.error.HTTPError:
+            print(f'Could not open {datasetURL}, skipping')
+            return
         JSON = json.loads(r'' + data)
 
         originalValues = []
