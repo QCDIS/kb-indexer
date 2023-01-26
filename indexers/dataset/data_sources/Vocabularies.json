@@ -1,5 +1,5 @@
 {
-  "oceanography": [
+  "Marine": [
     "sea",
     "ocean",
     "marine",
@@ -16,7 +16,7 @@
     "plankton",
     "seamount"
   ],
-  "biodiversity": [
+  "Biosphere and ecosystem": [
     "biodiversity",
     "species",
     "diversity",
@@ -35,7 +35,7 @@
     "food",
     "shelter"
   ],
-  "atmosphere": [
+  "Atmospheric": [
     "atmosphere",
     "climate",
     "air",
@@ -56,7 +56,7 @@
     "atmospheric",
     "pressure"
   ],
-  "geodiversity": [
+  "Solid Earth": [
     "geodiversity",
     "geo",
     "soil",
