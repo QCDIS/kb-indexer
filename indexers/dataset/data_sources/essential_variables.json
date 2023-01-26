@@ -1,5 +1,5 @@
 {
-    "oceanography": [
+    "Marine": [
      "Sea state",
      "Ocean surface stress",
      "Sea surface stress",
@@ -38,7 +38,7 @@
      "Marine Habitat Properties",
      "Plankton"
     ],
-    "biodiversity": [
+    "Biosphere and ecosystem": [
      "Genetic diversity (richness and heterozygosity)",
      "Genetic differentiation (number of genetic units and genetic distance)",
      "Effective population size",
@@ -60,7 +60,7 @@
      "Ecosystem distribution",
      "Ecosystem Vertical Profile"
     ],
-    "atmosphere": [
+    "Atmospheric": [
      "Precipitation",
      "Pressure",
      "Radiation budget",
@@ -83,7 +83,7 @@
      "Precursors",
      "Clouds"
     ],
-    "geodiversity": [
+    "Solid Earth": [
      "Above-Ground Biomass",
      "Albedo",
      "Anthropogenic Greenhouse Gas Fluxes",
