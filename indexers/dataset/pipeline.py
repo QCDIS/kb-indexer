@@ -12,13 +12,13 @@ from gensim import corpora
 import enchant
 from fuzzywuzzy import fuzz
 import urllib.request
-import uuid
 import json
 from lxml.etree import fromstring
 from xml.etree import ElementTree
 import glob
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from tqdm import tqdm
 
 from .. import utils
 
@@ -29,8 +29,7 @@ from . import synonyms
 class LanguageTools:
     def __init__(self):
         nltk_data_dir = os.path.join(
-            os.path.dirname(__file__), 'pipeline_io/nltk_data'
-            )
+            os.path.dirname(__file__), 'pipeline_io/nltk_data')
         nltk.data.path.append(nltk_data_dir)
         nltk.download('wordnet', download_dir=nltk_data_dir)
         nltk.download('stopwords', download_dir=nltk_data_dir)
@@ -50,10 +49,10 @@ class DeepSearch:
 
     def search(self, needles, haystack):
         found = {}
-        if type(needles) != type([]):
+        if isinstance(needles, list):
             needles = [needles]
 
-        if type(haystack) == type(dict()):
+        if isinstance(haystack, dict):
             for needle in needles:
                 if needle in haystack.keys():
                     found[needle] = haystack[needle]
@@ -69,18 +68,16 @@ class DeepSearch:
                         if result:
                             for k, v in result.items():
                                 found[k] = v
-                                self.foundResults.append(
-                                    v
-                                    ) if v not in self.foundResults else self.foundResults
-        elif type(haystack) == type([]):
+                                if v not in self.foundResults:
+                                    self.foundResults.append(v)
+        elif isinstance(haystack, list):
             for node in haystack:
                 result = self.search(needles, node)
                 if result:
                     for k, v in result.items():
                         found[k] = v
-                        self.foundResults.append(
-                            v
-                            ) if v not in self.foundResults else self.foundResults
+                        if v not in self.foundResults:
+                            self.foundResults.append(v)
         return found
 
 
@@ -100,10 +97,10 @@ class DatasetIndexer:
 
         cwd = os.path.dirname(__file__)
         self.data_dir = os.path.join(cwd, f'data/{self.source_name}/')
-        self.indexFiles_root = os.path.join(self.data_dir, "index files/")
+        self.index_records_dir = os.path.join(self.data_dir, "index_records/")
 
         os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs(self.indexFiles_root, exist_ok=True)
+        os.makedirs(self.index_records_dir, exist_ok=True)
 
         self.dataset_list_filename = os.path.join(
             self.data_dir, f'dataset_list{self.dataset_list_ext}')
@@ -120,15 +117,14 @@ class DatasetIndexer:
 
     def get_dataset_list(self):
         urllib.request.urlretrieve(
-            self.dataset_list_url,
-            self.dataset_list_filename)
+            self.dataset_list_url, self.dataset_list_filename)
 
     def convert_dataset_list_to_dataset_urls(self):
         pass
 
     def get_dataset_urls(self):
         with open(self.dataset_urls_filename, 'r') as f:
-            urls = [l.strip() for l in f.readlines()]
+            urls = [line.strip() for line in f.readlines()]
         return urls
 
     def getContextualText(self, JSON):
@@ -171,21 +167,20 @@ class DatasetIndexer:
         stop_free = " ".join(
             [i for i in integer_free.lower().split() if i not in self.lt.stop]
             )
-        punc_free = ''.join(ch for ch in stop_free if ch not in self.lt.exclude)
+        punc_free = ''.join(
+            ch for ch in stop_free if ch not in self.lt.exclude
+            )
         normalized = " ".join(
-            self.lt.lemma.lemmatize(word) for word in punc_free.split() if
-            len(word) > 2 and self.lt.EnglishTerm.check(word)
+            self.lt.lemma.lemmatize(word)
+            for word in punc_free.split()
+            if len(word) > 2 and self.lt.EnglishTerm.check(word)
             )
         return normalized
 
     def topicMining(self, dataset_json):
         #########################################
         # Turn it off:
-        #    if RI=="SeaDataNet_EDMED": Jsontext=getContextualText_SeaDataNet_EDMED(dataset_json)
-        #    if RI=="SeaDataNet_CDI": Jsontext= getContextualText_SeaDataNet_CDI (dataset_json)
-        #    if RI=="LifeWatch": Jsontext= getContextualText_LifeWatch (dataset_json)
-        #    if RI=="ICOS": Jsontext= getContextualText_ICOS (dataset_json)
-        #    return Jsontext
+        #    return self.getContextualText(dataset_json)
         ########################################
         lsttopic = []
         if dataset_json != "":
@@ -197,24 +192,26 @@ class DatasetIndexer:
             doc_term_matrix = [dictionary.doc2bow(doc) for doc in doc_clean]
             if len(doc_term_matrix) > 0:
                 ldamodel = gensim.models.LdaMulticore(
-                    corpus=doc_term_matrix, id2word=dictionary, num_topics=3,
-                    passes=10
+                    corpus=doc_term_matrix,
+                    id2word=dictionary,
+                    num_topics=3,
+                    passes=10,
                     )
                 topics = ldamodel.show_topics(log=True, formatted=True)
                 topTopics = sum(
-                    [re.findall('"([^"]*)"', listToString(t[1])) for t in topics],
+                    [re.findall('"([^"]*)"', listToString(t[1]))
+                     for t in topics],
                     []
                     )
                 for topic in topTopics:
-                    lsttopic.append(topic) if topic not in lsttopic else lsttopic
+                    if topic not in lsttopic:
+                        lsttopic.append(topic)
         return lsttopic
 
     def getTopicsByDomainVocabulareis(self, topics, domain):
         Vocabs = []
-        domainVocbularies_content = open(self.domainVocbularies_filename, "r")
-        domainVocbularies_object = json.loads(
-            r'' + domainVocbularies_content.read()
-            )
+        with open(self.domainVocbularies_filename) as f:
+            domainVocbularies_object = json.load(f)
         for vocab in domainVocbularies_object[domain]:
             for topic in topics:
                 w1 = self.lt.spacy_nlp(topic.lower())
@@ -233,16 +230,13 @@ class DatasetIndexer:
                 w2 = self.lt.spacy_nlp(variable.lower())
                 similarity = w1.similarity(w2)
                 if similarity >= self.acceptedSimilarityThreshold:
-                    lstEssentialVariables.append(
-                        variable
-                        ) if variable not in lstEssentialVariables else lstEssentialVariables
+                    if variable not in lstEssentialVariables:
+                        lstEssentialVariables.append(variable)
         return lstEssentialVariables
 
     def getDomainEssentialVariables(self, domain):
-        essentialVariabels_content = open(self.essentialVariabels_filename, "r")
-        essentialVariabels_json = json.loads(
-            r'' + essentialVariabels_content.read()
-            )
+        with open(self.essentialVariabels_filename) as f:
+            essentialVariabels_json = json.load(f)
         for domainVar in essentialVariabels_json:
             if domain == domainVar:
                 return essentialVariabels_json[domain]
@@ -285,9 +279,9 @@ class DatasetIndexer:
                         values = values + text
                     else:
                         values.append(text)
-                if type(values) == list and len(values):
+                if isinstance(values, list) and len(values):
                     TextArray = flatten_list(values)
-            if type(TextArray) == type(None):
+            if TextArray is None:
                 TextArray = ["\"" + str(TextArray) + "\""]
 
             for text in TextArray:
@@ -296,95 +290,85 @@ class DatasetIndexer:
                 if "url" in datatype and type(text) == str:
                     urls = re.findall(r"(?P<url>https?://\S+)", text)
                     if len(urls):
-                        refinedResults.append(
-                            urls
-                            ) if urls not in refinedResults else refinedResults
+                        if urls not in refinedResults:
+                            refinedResults.append(urls)
 
                 if "person" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "PERSON":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "PERSON":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "organization" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "ORG":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "ORG":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "place" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(
-                                    ent.text
-                                    ) > 0) and ent.label_ == "GPE" or ent.label_ == "LOC":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and (ent.label_ == "GPE" or
+                                             ent.label_ == "LOC"):
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "date" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "DATE":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "DATE":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "product" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "PRODUCT":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "PRODUCT":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if ("integer" in datatype) or ("number" in datatype):
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "CARDINAL":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "CARDINAL":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "money" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "MONEY":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "MONEY":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "workofart" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(ent.text) > 0) and ent.label_ == "WORK_OF_ART":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and ent.label_ == "WORK_OF_ART":
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if "language" in datatype:
                     if doc.ents:
                         for ent in doc.ents:
-                            if (len(
-                                    ent.text
-                                    ) > 0) and ent.label_ == "LANGUAGE" or ent.label_ == "GPE":
-                                refinedResults.append(
-                                    ent.text
-                                    ) if ent.text not in refinedResults else refinedResults
+                            if ent.text and (ent.label_ == "LANGUAGE" or
+                                             ent.label_ == "GPE"):
+                                if ent.text not in refinedResults:
+                                    refinedResults.append(ent.text)
 
                 if proprtyName.lower() not in str(text).lower() and (
                         "text" in datatype or "definedterm" in datatype):
-                    refinedResults.append(
-                        text
-                        ) if text not in refinedResults else refinedResults
+                    if text not in refinedResults:
+                        refinedResults.append(text)
 
         return refinedResults
 
-    def pruneExtractedContextualInformation(self, drivedValues, originalValues):
+    def pruneExtractedContextualInformation(
+            self, drivedValues,
+            originalValues
+            ):
         #########################################
         # Turn it off:
         # return drivedValues
@@ -394,74 +378,50 @@ class DatasetIndexer:
             for subDrivedField in drivedValues:
                 for originalField in originalValues:
                     simScore = get_jaccard_sim(
-                        subDrivedField.lower(), originalField.lower()
-                        )
+                        subDrivedField.lower(), originalField.lower())
                     if (
-                            simScore > self.CommonSubsetThreshold and
-                            subDrivedField not in lstAcceptedValues):
+                            simScore > self.CommonSubsetThreshold
+                            and subDrivedField not in lstAcceptedValues):
                         lstAcceptedValues.append(subDrivedField)
         else:
             lstAcceptedValues = drivedValues
 
         return lstAcceptedValues
 
-    def datasetProcessing(self, datasetURL):
+    def gen_record_from_url(self, datasetURL):
         pass
 
-    def if_URL_exist(self, url):
+    def url_is_indexed(self, url):
         return self.indexer.is_in_index('url', url)
 
-    def deleteAllIndexFilesByExtension(self, extension):
-        directory = self.indexFiles_root
-        files_in_directory = os.listdir(directory)
-        filtered_files = [file for file in files_in_directory if
-                          file.endswith(extension)]
-        for file in filtered_files:
-            path_to_file = os.path.join(directory, file)
-            os.remove(path_to_file)
+    def list_index_record_files(self):
+        return glob.glob(os.path.join(self.index_records_dir, '*.json'))
 
-    def Run_indexingPipeline_ingest_indexFiles(self):
-        """ Create index if not exist with correct settings if index exists,
-        change settings
-        """
-        # path is correct IF this file is in the same folder as 'envri_json'
-        indexfnames = os.path.join(self.indexFiles_root)
-        filelist = glob.glob(indexfnames + "*")
+    def clear_index_record_files(self):
+        for filename in self.list_index_record_files():
+            os.remove(filename)
 
-        indexed = 0
-        for i in range(len(filelist)):
-            doc = open_file(filelist[i])
-            print(
-                round(((i + 1) / len(filelist) * 100), 2), "%", filelist[i]
-                )  # keep track of progress / counter
-            indexed += 1
-            id_ = utils.gen_id_from_url(doc['url'])
-            self.indexer.ingest_record(id_, doc)
-        self.deleteAllIndexFilesByExtension(".json")
+    def ingest_record_files(self):
+        for record_file in tqdm(
+                self.list_index_record_files(),
+                desc='ingesting indexes'
+                ):
+            record = open_file(record_file)
+            id_ = utils.gen_id_from_url(record['url'])
+            self.indexer.ingest_record(id_, record)
 
-    def Run_indexingPipeline(self):
-        self.deleteAllIndexFilesByExtension(".json")
-        self.deleteAllIndexFilesByExtension(".csv")
+    def run_pipeline(self):
+        self.clear_index_record_files()
 
         print(f'indexing the {self.source_name} dataset repository')
         self.get_dataset_list()
         self.convert_dataset_list_to_dataset_urls()
 
-        cnt = 1
-        lstDataset = self.get_dataset_urls()
-        for datasetURL in lstDataset:
-            if not (self.if_URL_exist(datasetURL)):
-                self.datasetProcessing(datasetURL)
-                progress = cnt / len(lstDataset)
-                print(f'\n {self.source_name} ----> \n Record: {progress:.3g} % \n ----> \n')
-            else:
-                print(datasetURL)
-            cnt = cnt + 1
-
-            self.deleteAllIndexFilesByExtension(".csv")
-            self.Run_indexingPipeline_ingest_indexFiles()
-            return
-        print("The indexing process has been finished!")
+        urls = self.get_dataset_urls()
+        for url in tqdm(urls, desc='generating dataset records'):
+            if not self.url_is_indexed(url):
+                self.gen_record_from_url(url)
+        self.ingest_record_files()
 
 
 class SeaDataNetCDIIndexer(DatasetIndexer):
@@ -486,39 +446,26 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
         with open(self.dataset_urls_filename, 'w') as f:
             f.write('\n'.join(urls))
 
+    def gen_record_from_url(self, datasetURL):
+        with open(self.metadataStar_filename, "r") as f:
+            metadataStar_object = json.loads(f.read())
 
-    def datasetProcessing(self, datasetURL):
-        metadataStar_content = open(self.metadataStar_filename, "r")
-        metadataStar_object = json.loads(r'' + metadataStar_content.read())
+        indexfname = os.path.join(
+            self.index_records_dir,
+            utils.gen_id_from_url(datasetURL) + '.json',
+            )
+        indexFile = open(indexfname, "w")
+        indexFile.write("{\n")
+
         with urllib.request.urlopen(datasetURL) as f:
             data = f.read().decode('utf-8')
         JSON = json.loads(r'' + data)
 
-        unique_filename = str(uuid.uuid4())
-        indexfname = os.path.join(
-            self.indexFiles_root, "SeaDataNet_CDI_" + unique_filename
-            )
-        indexFile = open(indexfname + ".json", "w+")
-
-        logfile = os.path.join(self.indexFiles_root, "logfile.csv")
-        CSVvalue = ""
-        if not os.path.exists(logfile):
-            logfile = open(logfile, "a+")
-            for metadata_property in metadataStar_object:
-                CSVvalue = CSVvalue + metadata_property
-            logfile.write(CSVvalue)
-        else:
-            logfile = open(logfile, "a+")
-
-        CSVvalue = "\n"
-
-        indexFile.write("{\n")
         originalValues = []
         RI = ""
         domains = ""
         topics = []
         cnt = 0
-        lstKeywords = []
         for metadata_property in metadataStar_object:
             cnt = cnt + 1
 
@@ -540,8 +487,7 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
                     topics = self.topicMining(JSON)
                 result = topics
                 result = self.pruneExtractedContextualInformation(
-                    result, originalValues
-                    )
+                    result, originalValues)
             elif metadata_property == "EssentialVariables":
                 if not len(RI):
                     RI = self.getRI(JSON)
@@ -554,8 +500,7 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
                 result = self.getSimilarEssentialVariables(
                     essentialVariables, topics)
                 result = self.pruneExtractedContextualInformation(
-                    result, originalValues
-                    )
+                    result, originalValues)
             elif metadata_property == "url":
                 result = datasetURL  # [str(datasetURL)]
             elif metadata_property == "name":
@@ -564,10 +509,9 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
                 result = DeepSearch().search([metadata_property], JSON)
                 if not len(result):
                     searchFields = []
-                    for i in range(3, len(metadataStar_object[metadata_property])):
-                        result = DeepSearch().search(
-                            [metadataStar_object[metadata_property][i]], JSON
-                            )
+                    m = metadataStar_object[metadata_property]
+                    for i in range(3, len(m)):
+                        result = DeepSearch().search([m[i]], JSON)
                         if len(result):
                             searchFields.append(result)
                     result = searchFields
@@ -587,38 +531,35 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
             flattenValue = (str(MergeList(flatten_list(result)))
                             .replace("></a", "").replace(",", "-")
                             .replace("[", "").replace("]", "").replace("{", "")
-                            .replace("'", "").replace("\"", "").replace("}", "")
+                            .replace("'", "").replace("\"", "")
+                            .replace("}", "")
                             .replace("\"\"", "").replace(">\\", "")
                             .replace("' ", "'").replace(" '", "'"))
             flattenValue = str([x.strip() for x in flattenValue.split('-')])
 
             if (
-                    metadata_property == "description" or metadata_property == "keywords" or metadata_property == "abstract"):
-                txtVal = flattenValue.replace("[", "").replace("]", "").replace(
-                    "'", ""
-                    ).replace("\"", "").replace("\"\"", "").replace("None", "")
+                    metadata_property == "description"
+                    or metadata_property == "keywords"
+                    or metadata_property == "abstract"):
+                txtVal = (flattenValue.replace("[", "")
+                          .replace("]", "")
+                          .replace("'", "")
+                          .replace("\"", "")
+                          .replace("\"\"", "")
+                          .replace("None", ""))
                 if txtVal != "":
                     originalValues.append(txtVal)
 
             indexFile.write(
-                "\"" + str(metadata_property) + "\" :" + flattenValue.replace(
-                    "'", "\""
-                    ) + extrachar
+                "\""
+                + str(metadata_property)
+                + "\" :"
+                + flattenValue.replace("'", "\"")
+                + extrachar
                 )
-            CSVvalue = CSVvalue + flattenValue.replace(",", "-").replace(
-                "[", ""
-                ).replace(
-                "]", ""
-                ).replace("'", "").replace("\"", "").replace("\"\"", "") + ","
-
-            if metadata_property == "keywords":
-                lstKeywords = flattenValue
 
         indexFile.write("}")
         indexFile.close()
-
-        logfile.write(CSVvalue)
-        logfile.close()
 
 
 class SeaDataNetEDMEDIndexer(DatasetIndexer):
@@ -646,42 +587,36 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
     def _cleanhtml(raw_html):
         CLEANR = re.compile('<.*?>')
         cleantext = re.sub(CLEANR, '', raw_html)
-        return (''.join(x for x in cleantext if x in string.printable)).replace(
-            "'", ""
-            ).replace("\"", "").strip()
+        res = ''.join(x for x in cleantext if x in string.printable)
+        return res.replace("'", "").replace("\"", "").strip()
 
     def getValueHTML(self, searchTerm, datasetContents):
         for datasetContent in datasetContents:
             datasetContent = str(datasetContent)
-            if searchTerm in datasetContent and searchTerm not in self.lstCoveredFeaturesSeaDataNet:
+            if (searchTerm in datasetContent
+                    and searchTerm not in self.lstCoveredFeaturesSeaDataNet):
                 self.lstCoveredFeaturesSeaDataNet.append(searchTerm)
                 return self._cleanhtml(datasetContent)[len(searchTerm):]
 
-    def datasetProcessing(self, datasetURL):
-        metadataStar_content = open(self.metadataStar_filename, "r")
-        metadataStar_object = json.loads(r'' + metadataStar_content.read())
-        unique_filename = str(uuid.uuid4())
+    def gen_record_from_url(self, datasetURL):
+        with open(self.metadataStar_filename, "r") as f:
+            metadataStar_object = json.loads(f.read())
+
         indexfname = os.path.join(
-            self.indexFiles_root, "SeaDataNet_EDMED_" + unique_filename
+            self.index_records_dir,
+            utils.gen_id_from_url(datasetURL) + '.json',
             )
-        indexFile = open(indexfname + ".json", "w+")
-        logfile = os.path.join(self.indexFiles_root, "logfile.csv")
-        CSVvalue = ""
-        originalValues = []
-        if not os.path.exists(logfile):
-            logfile = open(logfile, "a+")
-            for metadata_property in metadataStar_object:
-                CSVvalue = CSVvalue + metadata_property
-            logfile.write(CSVvalue)
-        else:
-            logfile = open(logfile, "a+")
-        EDMED_JSON = {}
+        indexFile = open(indexfname, "w")
         indexFile.write("{\n")
+
+        originalValues = []
+
+        EDMED_JSON = {}
         datasetContents = Crawler().getHTMLContent(datasetURL, "tr")
+
         self.lstCoveredFeaturesSeaDataNet.clear()
         mapping = {}
         cnt = 0
-        lstKeywords = []
         mapping["url"] = str(datasetURL)
         mapping["ResearchInfrastructure"] = "SeaDataNet"
         RI = "SeaDataNet"
@@ -713,8 +648,6 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
         value = (self.getValueHTML("Parameters", datasetContents))
         mapping["keywords"] = str(value)
         EDMED_JSON["keywords"] = value
-        if type(value) == str or type(value) == list:
-            lstKeywords = str(value)
 
         value = (self.getValueHTML("Instruments", datasetContents))
         mapping["measurementTechnique"] = str(value)
@@ -768,11 +701,9 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
         value = self.getSimilarEssentialVariables(essentialVariables, value)
         mapping["EssentialVariables"] = value
 
-        CSVvalue = "\n"
-
         for metadata_property in metadataStar_object:
             cnt = cnt + 1
-            if (cnt == len(metadataStar_object)):
+            if cnt == len(metadataStar_object):
                 extrachar = "\n"
             else:
                 extrachar = ",\n"
@@ -783,42 +714,39 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
                     value = [value]
 
                 if (
-                        metadata_property == "description" or metadata_property == "keywords" or metadata_property == "abstract"):
-                    txtVal = str(value).replace("[", "").replace("]", "").replace(
-                        "'", ""
-                        ).replace("\"", "").replace("\"\"", "").replace("None", "")
+                        metadata_property == "description"
+                        or metadata_property == "keywords"
+                        or metadata_property == "abstract"):
+                    txtVal = (str(value).replace("[", "").replace("]", "")
+                              .replace("'", "").replace("\"", "")
+                              .replace("\"\"", "")
+                              .replace("None", ""))
                     if txtVal != "":
                         originalValues.append(txtVal)
 
-                elif metadata_property == "potentialTopics" or metadata_property == "EssentialVariables":
+                elif (
+                        metadata_property == "potentialTopics"
+                        or metadata_property == "EssentialVariables"):
                     value = self.pruneExtractedContextualInformation(
-                        value, originalValues
-                        )
+                        value, originalValues)
 
                 indexFile.write(
-                    "\"" + str(metadata_property) + "\" :" + str(value).replace(
-                        "'", "\""
-                        ) + extrachar
+                    "\""
+                    + str(metadata_property)
+                    + "\" :"
+                    + str(value).replace("'", "\"") + extrachar
                     )
-                CSVvalue = CSVvalue + str(value).replace(",", "-").replace(
-                    "[", ""
-                    ).replace(
-                    "]", ""
-                    ).replace("'", "").replace("\"", "") + ","
             else:
                 indexFile.write(
-                    "\"" + str(metadata_property) + "\" :" + str([]) + extrachar
+                    "\""
+                    + str(metadata_property)
+                    + "\" :"
+                    + str([])
+                    + extrachar
                     )
-                CSVvalue = CSVvalue + ","
 
-        #    value=(self.getValueHTML_SeaDataNet("Availability", datasetContents))
-        #    value=(self.getValueHTML_SeaDataNet("Ongoing", datasetContents))
-        #    value=(self.getValueHTML_SeaDataNet("Global identifier", datasetContents))
         indexFile.write("}")
         indexFile.close()
-
-        logfile.write(CSVvalue)
-        logfile.close()
 
 
 class ICOSIndexer(DatasetIndexer):
@@ -830,7 +758,8 @@ class ICOSIndexer(DatasetIndexer):
     def get_dataset_list(self):
         cURL = r"""curl https://meta.icos-cp.eu/sparql -H 'Cache-Control: no-cache' -X POST --data 'query=prefix%20cpmeta%3A%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fontologies%2Fcpmeta%2F%3E%0Aprefix%20prov%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fprov%23%3E%0Aselect%20%3Fdobj%20%3Fspec%20%3FfileName%20%3Fsize%20%3FsubmTime%20%3FtimeStart%20%3FtimeEnd%0Awhere%20%7B%0A%09VALUES%20%3Fspec%20%7B%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FradonFluxSpatialL3%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fco2EmissionInventory%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FsunInducedFluorescence%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FoceanPco2CarbonFluxMaps%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FinversionModelingSpatial%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FbiosphereModelingSpatial%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoFluxesDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoEcoDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoMeteoDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoAirTempMultiLevelsDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoProfileMultiLevelsDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMeteoL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcLosGatosL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcPicarroL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosInversionResult%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fsocat_DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcBioMeteoRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcStorageFluxRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcBioMeteoRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcStorageFluxRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcSaheatFlagFile%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FceptometerMeasurements%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FglobalCarbonBudget%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FnationalCarbonEmissions%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FglobalMethaneBudget%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FdigHemispherPics%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcEddyFluxRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcEddyFluxRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCh4L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCoL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCo2L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMtoL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcC14L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMeteoGrowingNrtDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCo2NrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCh4NrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcN2oL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCoNrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcN2oNrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosCh4Release%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosN2oRelease%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcRnNrtDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdrought2018AtmoProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FmodelDataArchive%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcArchiveProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdought2018ArchiveProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatmoMeasResultsArchive%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtAuxData%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcFluxnetProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdrought2018FluxnetProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtFluxes%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtMeteosens%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtMeteo%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL1Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL1Product_v2%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL2Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcFosL2Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FotcL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FinversionModelingTimeseries%3E%7D%0A%09%3Fdobj%20cpmeta%3AhasObjectSpec%20%3Fspec%20.%0A%09%3Fdobj%20cpmeta%3AhasSizeInBytes%20%3Fsize%20.%0A%3Fdobj%20cpmeta%3AhasName%20%3FfileName%20.%0A%3Fdobj%20cpmeta%3AwasSubmittedBy%2Fprov%3AendedAtTime%20%3FsubmTime%20.%0A%3Fdobj%20cpmeta%3AhasStartTime%20%7C%20%28cpmeta%3AwasAcquiredBy%20%2F%20prov%3AstartedAtTime%29%20%3FtimeStart%20.%0A%3Fdobj%20cpmeta%3AhasEndTime%20%7C%20%28cpmeta%3AwasAcquiredBy%20%2F%20prov%3AendedAtTime%29%20%3FtimeEnd%20.%0A%09FILTER%20NOT%20EXISTS%20%7B%5B%5D%20cpmeta%3AisNextVersionOf%20%3Fdobj%7D%0A%7D%0Aorder%20by%20desc%28%3FsubmTime%29'"""
         lCmd = shlex.split(cURL)  # Splits cURL into an array
-        p = subprocess.Popen(lCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(
+            lCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()  # Get the output and the err message
         json_data = json.loads(r'' + out.decode("utf-8"))
         indexFile = open(self.dataset_list_filename, "w+")
@@ -848,34 +777,23 @@ class ICOSIndexer(DatasetIndexer):
         with open(self.dataset_urls_filename, 'w') as f:
             f.write('\n'.join(urls))
 
-    def datasetProcessing(self, datasetURL):
-        metadataStar_content = open(self.metadataStar_filename, "r")
-        metadataStar_object = json.loads(r'' + metadataStar_content.read())
-        unique_filename = str(uuid.uuid4())
-        indexfname = os.path.join(self.indexFiles_root, "ICOS_" + unique_filename)
-        indexFile = open(indexfname + ".json", "w+")
-        essentialVariables = []
-        logfile = os.path.join(self.indexFiles_root, "logfile.csv")
-        CSVvalue = ""
-        if not os.path.exists(logfile):
-            logfile = open(logfile, "a+")
-            for metadata_property in metadataStar_object:
-                CSVvalue = CSVvalue + metadata_property
-            logfile.write(CSVvalue)
-        else:
-            logfile = open(logfile, "a+")
+    def gen_record_from_url(self, datasetURL):
+        with open(self.metadataStar_filename, "r") as f:
+            metadataStar_object = json.loads(f.read())
 
-        CSVvalue = "\n"
-
+        indexfname = os.path.join(
+            self.index_records_dir,
+            utils.gen_id_from_url(datasetURL) + '.json',
+            )
+        indexFile = open(indexfname, "w")
         indexFile.write("{\n")
 
         scripts = Crawler().getHTMLContent(datasetURL, "script")
         for script in scripts:
             if '<script type="application/ld+json">' in str(script):
                 script = str(script)
-                start = script.find('<script type="application/ld+json">') + len(
-                    '<script type="application/ld+json">'
-                    )
+                start = (script.find('<script type="application/ld+json">')
+                         + len('<script type="application/ld+json">'))
                 end = script.find("</script>")
                 script = script[start:end]
                 JSON = json.loads(r'' + script)
@@ -884,7 +802,6 @@ class ICOSIndexer(DatasetIndexer):
                 topics = []
                 originalValues = []
                 cnt = 0
-                lstKeywords = []
                 for metadata_property in metadataStar_object:
                     cnt = cnt + 1
 
@@ -898,14 +815,14 @@ class ICOSIndexer(DatasetIndexer):
                             domains = self.getDomain(RI)
                         if not len(topics):
                             topics = self.topicMining(JSON)
-                        result = self.getTopicsByDomainVocabulareis(topics, domains[0])
+                        result = self.getTopicsByDomainVocabulareis(
+                            topics, domains[0])
                     elif metadata_property == "potentialTopics":
                         if not len(topics):
                             topics = self.topicMining(JSON)
                         result = topics
                         result = self.pruneExtractedContextualInformation(
-                            result, originalValues
-                            )
+                            result, originalValues)
                     elif metadata_property == "EssentialVariables":
                         if not len(RI):
                             RI = self.getRI(JSON)
@@ -914,40 +831,28 @@ class ICOSIndexer(DatasetIndexer):
                         if not len(topics):
                             topics = self.topicMining(JSON)
                         essentialVariables = self.getDomainEssentialVariables(
-                            domains[0]
-                            )
+                            domains[0])
                         result = self.getSimilarEssentialVariables(
-                            essentialVariables, topics
-                            )
+                            essentialVariables, topics)
                         result = self.pruneExtractedContextualInformation(
-                            result, originalValues
-                            )
+                            result, originalValues)
                     elif metadata_property == "url":
                         result = datasetURL  # [str(datasetURL)]
                     else:
                         result = DeepSearch().search([metadata_property], JSON)
                         if not len(result):
                             searchFields = []
-                            for i in range(
-                                    3, len(
-                                        metadataStar_object[metadata_property]
-                                        )
-                                    ):
-                                result = DeepSearch().search(
-                                    [metadataStar_object[metadata_property][i]],
-                                    JSON
-                                    )
+                            m = metadataStar_object[metadata_property]
+                            for i in range(3, len(m)):
+                                result = DeepSearch().search([m[i]], JSON)
                                 if len(result):
                                     searchFields.append(result)
                             result = searchFields
-                    propertyDatatype = metadataStar_object[metadata_property][0]
+                    propertyDatatype = metadataStar_object[metadata_property][
+                        0]
                     # if metadata_property!="url":
                     result = self.refineResults(
-                        result, propertyDatatype, metadata_property
-                        )
-
-                    # if metadata_property=="language" and (result=="" or result==[]):
-                    #   result= LangaugePrediction(self.extractTextualContent(JSON))
+                        result, propertyDatatype, metadata_property)
 
                     if cnt == len(metadataStar_object):
                         extrachar = "\n"
@@ -959,14 +864,15 @@ class ICOSIndexer(DatasetIndexer):
                         flattenValue = "[]"
 
                     if (
-                            metadata_property == "description" or metadata_property == "keywords" or metadata_property == "abstract"):
-                        txtVal = flattenValue.replace("[", "").replace(
-                            "]", ""
-                            ).replace(
-                            "'", ""
-                            ).replace("\"", "").replace("\"\"", "").replace(
-                            "None", ""
-                            )
+                            metadata_property == "description"
+                            or metadata_property == "keywords"
+                            or metadata_property == "abstract"):
+                        txtVal = (flattenValue.replace("[", "")
+                                  .replace("]", "")
+                                  .replace("'", "")
+                                  .replace("\"", "")
+                                  .replace("\"\"", "")
+                                  .replace("None", ""))
                         if txtVal != "":
                             originalValues.append(txtVal)
 
@@ -974,28 +880,19 @@ class ICOSIndexer(DatasetIndexer):
                         flattenValue = "[]"
 
                     indexFile.write(
-                        "\"" + str(metadata_property) + "\" :" +
-                        flattenValue.replace("']", "\"]").replace(
-                            "['", "[\""
-                            ).replace(
-                            "',", "\","
-                            ).replace(
-                            ", '", ", \""
-                            ).replace("\"\"", "\"")
+                        "\""
+                        + str(metadata_property)
+                        + "\" :"
+                        + flattenValue.replace("']", "\"]")
+                        .replace("['", "[\"")
+                        .replace("',", "\",")
+                        .replace(", '", ", \"")
+                        .replace("\"\"", "\"")
                         + extrachar
                         )
-                    CSVvalue = CSVvalue + flattenValue.replace(",", "-").replace(
-                        "[", ""
-                        ).replace("]", "").replace("'", "").replace("\"", "") + ","
-
-                    if metadata_property == "keywords":
-                        lstKeywords = flattenValue
 
         indexFile.write("}")
         indexFile.close()
-
-        logfile.write(CSVvalue)
-        logfile.close()
 
 
 class LifeWatchIndexer(DatasetIndexer):
@@ -1024,40 +921,29 @@ class LifeWatchIndexer(DatasetIndexer):
         xml = "/formatters/xml?approved=true"
         for line in lines:
             datasetID = (line.split(",")[1].replace("\"", ""))
-            if not "oai:marineinfo.org:id:dataset" in datasetID:
+            if "oai:marineinfo.org:id:dataset" not in datasetID:
                 continue
             url = baseline
             urls.append(url + datasetID + xml)
         with open(self.dataset_urls_filename, 'w') as f:
             f.write('\n'.join(urls))
 
-    def datasetProcessing(self, datasetURL):
-        metadataStar_content = open(self.metadataStar_filename, "r")
-        metadataStar_object = json.loads(r'' + metadataStar_content.read())
+    def gen_record_from_url(self, datasetURL):
+        with open(self.metadataStar_filename, "r") as f:
+            metadataStar_object = json.loads(f.read())
 
-        unique_filename = str(uuid.uuid4())
-        indexfname = os.path.join(self.indexFiles_root, "LifeWatch_" + unique_filename)
-        indexFile = open(indexfname + ".json", "w+")
-
-        logfile = os.path.join(self.indexFiles_root, "logfile.csv")
-        CSVvalue = ""
-        if not os.path.exists(logfile):
-            logfile = open(logfile, "a+")
-            for metadata_property in metadataStar_object:
-                CSVvalue = CSVvalue + metadata_property
-            logfile.write(CSVvalue)
-        else:
-            logfile = open(logfile, "a+")
-
-        CSVvalue = "\n"
-
+        indexfname = os.path.join(
+            self.index_records_dir,
+            utils.gen_id_from_url(datasetURL) + '.json',
+            )
+        indexFile = open(indexfname, "w")
         indexFile.write("{\n")
+
         originalValues = []
         RI = ""
         domains = ""
         topics = []
         cnt = 0
-        lstKeywords = []
         datasetDic = {}
         with urllib.request.urlopen(datasetURL) as f:
             data = f.read().decode('utf-8')
@@ -1077,9 +963,9 @@ class LifeWatchIndexer(DatasetIndexer):
             if strValue == "":
                 elemList.append(strKey)
             else:
-                for elem in elemList:
-                    datasetDic[elem].remove('')
-                    datasetDic[elem].append(strValue)
+                for k in elemList:
+                    datasetDic[k].remove('')
+                    datasetDic[k].append(strValue)
                 elemList.clear()
         JSON = datasetDic
         for metadata_property in metadataStar_object:
@@ -1103,8 +989,7 @@ class LifeWatchIndexer(DatasetIndexer):
                     topics = self.topicMining(JSON)
                 result = topics
                 result = self.pruneExtractedContextualInformation(
-                    result, originalValues
-                    )
+                    result, originalValues)
             elif metadata_property == "EssentialVariables":
                 if not len(RI):
                     RI = self.getRI(JSON)
@@ -1117,18 +1002,16 @@ class LifeWatchIndexer(DatasetIndexer):
                 result = self.getSimilarEssentialVariables(
                     essentialVariables, topics)
                 result = self.pruneExtractedContextualInformation(
-                    result, originalValues
-                    )
+                    result, originalValues)
             elif metadata_property == "url":
                 result = datasetURL  # [str(datasetURL)]
             else:
                 result = DeepSearch().search([metadata_property], JSON)
                 if not len(result):
                     searchFields = []
-                    for i in range(3, len(metadataStar_object[metadata_property])):
-                        result = DeepSearch().search(
-                            [metadataStar_object[metadata_property][i]], JSON
-                            )
+                    m = metadataStar_object[metadata_property]
+                    for i in range(3, len(m)):
+                        result = DeepSearch().search([m[i]], JSON)
                         if len(result):
                             searchFields.append(result)
                     result = searchFields
@@ -1147,38 +1030,35 @@ class LifeWatchIndexer(DatasetIndexer):
             flattenValue = (str(MergeList(flatten_list(result)))
                             .replace("></a", "").replace(",", "-")
                             .replace("[", "").replace("]", "").replace("{", "")
-                            .replace("'", "").replace("\"", "").replace("}", "")
+                            .replace("'", "").replace("\"", "")
+                            .replace("}", "")
                             .replace("\"\"", "").replace(">\\", "")
                             .replace("' ", "'").replace(" '", "'"))
             flattenValue = str([x.strip() for x in flattenValue.split('-')])
 
             if (
-                    metadata_property == "description" or metadata_property == "keywords" or metadata_property == "abstract"):
-                txtVal = flattenValue.replace("[", "").replace("]", "").replace(
-                    "'", ""
-                    ).replace("\"", "").replace("\"\"", "").replace("None", "")
+                    metadata_property == "description"
+                    or metadata_property == "keywords"
+                    or metadata_property == "abstract"):
+                txtVal = (flattenValue.replace("[", "")
+                                      .replace("]", "")
+                                      .replace("'", "")
+                                      .replace("\"", "")
+                                      .replace("\"\"", "")
+                                      .replace("None", ""))
                 if txtVal != "":
                     originalValues.append(txtVal)
 
             indexFile.write(
-                "\"" + str(metadata_property) + "\" :" + flattenValue.replace(
-                    "'", "\""
-                    ) + extrachar
+                "\""
+                + str(metadata_property)
+                + "\" :"
+                + flattenValue.replace("'", "\"")
+                + extrachar
                 )
-            CSVvalue = CSVvalue + flattenValue.replace(",", "-").replace(
-                "[", ""
-                ).replace(
-                "]", ""
-                ).replace("'", "").replace("\"", "").replace("\"\"", "") + ","
-
-            if metadata_property == "keywords":
-                lstKeywords = flattenValue
 
         indexFile.write("}")
         indexFile.close()
-
-        logfile.write(CSVvalue)
-        logfile.close()
 
 
 def listToString(s):
@@ -1197,9 +1077,9 @@ def NestedDictValues(d):
                 yield v
 
 
-def is_nested_list(l):
+def is_nested_list(lst):
     try:
-        next(x for x in l if isinstance(x, list))
+        next(x for x in lst if isinstance(x, list))
     except StopIteration:
         return False
     return True
@@ -1242,9 +1122,9 @@ def open_file(file):
 
 
 def main():
-    SeaDataNetCDIIndexer().Run_indexingPipeline()
-    SeaDataNetEDMEDIndexer().Run_indexingPipeline()
-    ICOSIndexer().Run_indexingPipeline()
+    SeaDataNetCDIIndexer().run_pipeline()
+    SeaDataNetEDMEDIndexer().run_pipeline()
+    ICOSIndexer().run_pipeline()
     # LifeWatchIndexer().Run_indexingPipeline()
 
 
