@@ -49,7 +49,7 @@ class DeepSearch:
 
     def search(self, needles, haystack):
         found = {}
-        if isinstance(needles, list):
+        if not isinstance(needles, list):
             needles = [needles]
 
         if isinstance(haystack, dict):
