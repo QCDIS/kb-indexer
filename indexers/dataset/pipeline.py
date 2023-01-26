@@ -1104,9 +1104,17 @@ class SIOSIndexer(DatasetIndexer):
         results_per_page = 10  # from API doc
         start_index = i * results_per_page
         url = f'{self.dataset_list_url}?f=json&startindex={start_index}'
-        with urllib.request.urlopen(url) as r:
-            response = json.load(r)
-        return response
+        try:
+            with urllib.request.urlopen(url) as r:
+                response = json.load(r)
+            return response
+        except urllib.error.HTTPError:
+            print(f'Could not open {url}, skipping')
+            empty_response = {
+                'numberReturned': 0,
+                'features': [],
+                }
+            return empty_response
 
     def get_dataset_list(self):
         response = self._get_dataset_list_page(0)
@@ -1132,8 +1140,12 @@ class SIOSIndexer(DatasetIndexer):
             f.write('\n'.join(urls))
 
     def gen_record_from_url(self, url):
-        with urllib.request.urlopen(url) as r:
-            dataset_metadata = json.load(r)
+        try:
+            with urllib.request.urlopen(url) as r:
+                dataset_metadata = json.load(r)
+        except urllib.error.HTTPError:
+            print(f'Could not open {url}, skipping')
+            return
 
         creator = 'Norwegian Meteorological Institute'
         spatial_extent = dataset_metadata['properties']['extents']['spatial']
