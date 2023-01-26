@@ -1,4 +1,5 @@
 import os
+import hashlib
 import json
 import time
 from elasticsearch import Elasticsearch
@@ -23,12 +24,17 @@ def load_dotenv():
     dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 
-def gen_id_from_url(url):
+def gen_id_from_url(url, max_length=140):
     if type(url) in (list, tuple):
         if len(url) != 1:
             raise ValueError(f'one url must be provided {url}')
         url = url[0]
-    return url.replace('/', '_')
+    id_ = url.replace('/', '_')
+
+    if len(id_) > max_length:
+        id_ = hashlib.md5(id_.encode('utf-8')).hexdigest()
+
+    return id_
 
 
 def create_es_client() -> Elasticsearch:
