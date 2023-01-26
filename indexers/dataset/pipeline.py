@@ -13,6 +13,7 @@ import enchant
 from fuzzywuzzy import fuzz
 import urllib.request
 import urllib.error
+import requests.exceptions
 import json
 from lxml.etree import fromstring
 from xml.etree import ElementTree
@@ -474,6 +475,14 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
             f.write('\n'.join(urls))
 
     def gen_record_from_url(self, datasetURL):
+        try:
+            with urllib.request.urlopen(datasetURL) as f:
+                data = f.read().decode('utf-8')
+        except urllib.error.HTTPError:
+            print(f'Could not open {datasetURL}, skipping')
+            return
+        JSON = json.loads(r'' + data)
+
         with open(self.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
@@ -483,14 +492,6 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
             )
         indexFile = open(indexfname, "w")
         indexFile.write("{\n")
-
-        try:
-            with urllib.request.urlopen(datasetURL) as f:
-                data = f.read().decode('utf-8')
-        except urllib.error.HTTPError:
-            print(f'Could not open {datasetURL}, skipping')
-            return
-        JSON = json.loads(r'' + data)
 
         originalValues = []
         RI = ""
@@ -630,6 +631,12 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
                 return self._cleanhtml(datasetContent)[len(searchTerm):]
 
     def gen_record_from_url(self, datasetURL):
+        try:
+            datasetContents = Crawler().getHTMLContent(datasetURL, "tr")
+        except requests.exceptions.ConnectionError:
+            print(f'Could not open {datasetURL}, skipping')
+            return
+
         with open(self.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
@@ -643,7 +650,6 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
         originalValues = []
 
         EDMED_JSON = {}
-        datasetContents = Crawler().getHTMLContent(datasetURL, "tr")
 
         self.lstCoveredFeaturesSeaDataNet.clear()
         mapping = {}
@@ -809,6 +815,12 @@ class ICOSIndexer(DatasetIndexer):
             f.write('\n'.join(urls))
 
     def gen_record_from_url(self, datasetURL):
+        try:
+            scripts = Crawler().getHTMLContent(datasetURL, "script")
+        except requests.exceptions.ConnectionError:
+            print(f'Could not open {datasetURL}, skipping')
+            return
+
         with open(self.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
@@ -819,7 +831,6 @@ class ICOSIndexer(DatasetIndexer):
         indexFile = open(indexfname, "w")
         indexFile.write("{\n")
 
-        scripts = Crawler().getHTMLContent(datasetURL, "script")
         for script in scripts:
             if '<script type="application/ld+json">' in str(script):
                 script = str(script)
@@ -960,6 +971,14 @@ class LifeWatchIndexer(DatasetIndexer):
             f.write('\n'.join(urls))
 
     def gen_record_from_url(self, datasetURL):
+        try:
+            with urllib.request.urlopen(datasetURL) as f:
+                data = f.read().decode('utf-8')
+            xmlTree = fromstring(data.encode())
+        except urllib.error.HTTPError:
+            print(f'Could not open {datasetURL}, skipping')
+            return
+
         with open(self.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
@@ -976,9 +995,6 @@ class LifeWatchIndexer(DatasetIndexer):
         topics = []
         cnt = 0
         datasetDic = {}
-        with urllib.request.urlopen(datasetURL) as f:
-            data = f.read().decode('utf-8')
-        xmlTree = fromstring(data.encode())
         elemList = []
 
         for elem in xmlTree.iter():
