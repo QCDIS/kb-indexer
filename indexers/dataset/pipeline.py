@@ -389,6 +389,32 @@ class DatasetIndexer:
 
         return lstAcceptedValues
 
+    def post_process_index_record(self, record):
+        # Extract contextual information
+        extracted_contextual_information = []
+        for k in ['description', 'abstract', 'keywords']:
+            text = (str(record[k]).replace("[", "")
+                    .replace("]", "")
+                    .replace("'", "")
+                    .replace("\"", "")
+                    .replace("\"\"", "")
+                    .replace("None", ""))
+            if text:
+                extracted_contextual_information.append(text)
+        # Prune contextual information
+        for k in ['potentialTopics', 'EssentialVariables']:
+            record[k] = self.pruneExtractedContextualInformation(
+                record[k], extracted_contextual_information)
+        return record
+
+    def save_index_record(self, record):
+        index_record_filename = os.path.join(
+            self.index_records_dir,
+            utils.gen_id_from_url(record['url']) + '.json',
+            )
+        with open(index_record_filename, 'w') as f:
+            json.dump(record, f)
+
     def gen_record_from_url(self, datasetURL):
         pass
 
@@ -1066,6 +1092,94 @@ class LifeWatchIndexer(DatasetIndexer):
         indexFile.close()
 
 
+class SIOSIndexer(DatasetIndexer):
+    RI = 'SIOS'
+    source_name = 'SIOS'
+    dataset_list_url = 'https://sios.csw.met.no/collections/metadata:main/items'
+    dataset_list_ext = '.json'
+    contextual_text_fields = ["title", "keywords", "description"]
+    contextual_text_fallback_field = "description"
+
+    def _get_dataset_list_page(self, i):
+        results_per_page = 10  # from API doc
+        start_index = i * results_per_page
+        url = f'{self.dataset_list_url}?f=json&startindex={start_index}'
+        with urllib.request.urlopen(url) as r:
+            response = json.load(r)
+        return response
+
+    def get_dataset_list(self):
+        response = self._get_dataset_list_page(0)
+        datasets = response['features']
+        page = 1
+        while response['numberReturned']:
+            print(page, len(datasets))
+            response = self._get_dataset_list_page(page)
+            datasets += response['features']
+            page += 1
+
+        with open(self.dataset_list_filename, 'w') as f:
+            json.dump(datasets, f)
+
+    def convert_dataset_list_to_dataset_urls(self):
+        with open(self.dataset_list_filename, "r") as f:
+            datasets = json.load(f)
+
+        urls = [f"{self.dataset_list_url}/{feature['id']}?f=json"
+                for feature in datasets]
+
+        with open(self.dataset_urls_filename, 'w') as f:
+            f.write('\n'.join(urls))
+
+    def gen_record_from_url(self, url):
+        with urllib.request.urlopen(url) as r:
+            dataset_metadata = json.load(r)
+
+        creator = 'Norwegian Meteorological Institute'
+        spatial_extent = dataset_metadata['properties']['extents']['spatial']
+
+        index_record = {
+            'url': url,
+            'ResearchInfrastructure': self.RI,
+            'name': dataset_metadata['properties']['title'],
+            'copyrightHolder': creator,
+            'contributor': creator,
+            'creator': creator,
+            'publisher': creator,
+            'author': creator,
+            'producer': creator,
+            'provider': creator,
+            'contact': 'adc-support@met.no',
+            'locationCreated': spatial_extent,
+            'contentLocation': spatial_extent,
+            'modificationDate': dataset_metadata['properties']['recordUpdated'],
+            'keywords': dataset_metadata['properties']['keywords'],
+            'description': dataset_metadata['properties']['description'],
+            'abstract': dataset_metadata['properties']['description'],
+            }
+
+        for link in dataset_metadata['associations']:
+            if link['type'] == 'WWW:DOWNLOAD-1.0-http--download':
+                index_record['distributionInfo'] = link['href']
+                break
+        if ('distributionInfo' not in index_record
+                and dataset_metadata['associations']):
+            fallback_link = dataset_metadata['associations'][0]['href']
+            index_record['distributionInfo'] = fallback_link
+
+        index_record["potentialTopics"] = self.topicMining(dataset_metadata)
+
+        index_record["EssentialVariables"] = self.getDomainEssentialVariables(
+            self.getDomain(self.RI)[0])
+        index_record["EssentialVariables"] = self.getSimilarEssentialVariables(
+            index_record["EssentialVariables"],
+            index_record["potentialTopics"],
+            )
+
+        index_record = self.post_process_index_record(index_record)
+        self.save_index_record(index_record)
+
+
 def listToString(s):
     str1 = ""
     for ele in s:
@@ -1131,6 +1245,7 @@ def main():
     SeaDataNetEDMEDIndexer().run_pipeline()
     ICOSIndexer().run_pipeline()
     # LifeWatchIndexer().Run_indexingPipeline()
+    SIOSIndexer().run_pipeline()
 
 
 if __name__ == '__main__':
