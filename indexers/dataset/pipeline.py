@@ -19,7 +19,6 @@ from xml.etree import ElementTree
 import glob
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
-import random
 
 from .. import utils
 
@@ -90,7 +89,8 @@ class DatasetIndexer:
     CommonSubsetThreshold = 0.0
 
     source_name: str
-    MetadataRecordsFileName: str
+    dataset_list_url: str
+    dataset_list_ext: str
     contextual_text_fields: list[str]
     contextual_text_fallback_field: str
 
@@ -99,11 +99,16 @@ class DatasetIndexer:
         self.lt = LanguageTools()
 
         cwd = os.path.dirname(__file__)
-        self.MetaDataRecordPath = cwd + "/data/Metadata records/"
-        self.indexFiles_root = cwd + "/data/index files/"
+        self.data_dir = os.path.join(cwd, f'data/{self.source_name}/')
+        self.indexFiles_root = os.path.join(self.data_dir, "index files/")
 
+        os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.indexFiles_root, exist_ok=True)
-        os.makedirs(self.MetaDataRecordPath, exist_ok=True)
+
+        self.dataset_list_filename = os.path.join(
+            self.data_dir, f'dataset_list{self.dataset_list_ext}')
+        self.dataset_urls_filename = os.path.join(
+            self.data_dir, f'dataset_urls.txt')
 
         self.metadataStar_filename = cwd + "/data_sources/metadata*.json"
         self.RI_filename = cwd + "/data_sources/RIs.json"
@@ -113,18 +118,18 @@ class DatasetIndexer:
         self.domainVocbularies_filename = (
                 cwd + "/data_sources/Vocabularies.json")
 
-    def getDatasetRecords(self):
+    def get_dataset_list(self):
+        urllib.request.urlretrieve(
+            self.dataset_list_url,
+            self.dataset_list_filename)
+
+    def convert_dataset_list_to_dataset_urls(self):
         pass
 
-    def saveSelectedURLs(self, lstDataset, datasetTitle):
-        RndIndexFiles = os.path.join(self.indexFiles_root, datasetTitle + ".csv")
-        with open(RndIndexFiles, 'w') as f:
-            for url in lstDataset:
-                f.write("%s\n" % url)
-        f.close()
-
-    def getOnlineDatasetRecords(self, rnd, genRnd, startingPoint) -> list[str]:
-        pass
+    def get_dataset_urls(self):
+        with open(self.dataset_urls_filename, 'r') as f:
+            urls = [l.strip() for l in f.readlines()]
+        return urls
 
     def getContextualText(self, JSON):
         contextualText = DeepSearch().search(self.contextual_text_fields, JSON)
@@ -439,10 +444,11 @@ class DatasetIndexer:
         self.deleteAllIndexFilesByExtension(".csv")
 
         print(f'indexing the {self.source_name} dataset repository')
-        self.getDatasetRecords()
+        self.get_dataset_list()
+        self.convert_dataset_list_to_dataset_urls()
 
         cnt = 1
-        lstDataset = self.getOnlineDatasetRecords(False, 10, 1)
+        lstDataset = self.get_dataset_urls()
         for datasetURL in lstDataset:
             if not (self.if_URL_exist(datasetURL)):
                 self.datasetProcessing(datasetURL)
@@ -454,52 +460,32 @@ class DatasetIndexer:
 
             self.deleteAllIndexFilesByExtension(".csv")
             self.Run_indexingPipeline_ingest_indexFiles()
+            return
         print("The indexing process has been finished!")
 
 
 class SeaDataNetCDIIndexer(DatasetIndexer):
     source_name = 'SeaDataNet CDI'
-    MetadataRecordsFileName = "SeaDataNet-CDI-metadata-records.xml"
+    dataset_list_url = 'https://cdi.seadatanet.org/report/aggregation'
+    dataset_list_ext = ".xml"
     contextual_text_fields = [
         "Data set name", "Discipline", "Parameter groups",
         "Discovery parameter", "GEMET-INSPIRE themes"]
     contextual_text_fallback_field = "Abstract"
 
-    def getDatasetRecords(self):
-        with urllib.request.urlopen(
-                'https://cdi.seadatanet.org/report/aggregation'
-                ) as f:
-            data = f.read().decode('utf-8')
-        indexFile = open(
-            self.MetaDataRecordPath + self.MetadataRecordsFileName,
-            "w+"
-            )
-        indexFile.write(data)
-        indexFile.close()
-        print("SeaDataNet CDI data collection is done!")
-
-    def getOnlineDatasetRecords(self, rnd, genRnd, startingPoint):
-        tree = ElementTree.parse(
-            self.MetaDataRecordPath + self.MetadataRecordsFileName
-            )
+    def convert_dataset_list_to_dataset_urls(self):
+        tree = ElementTree.parse(self.dataset_list_filename)
         indexFile = tree.getroot()
-        cnt = 1
-        random_selection = random.sample(
-            range(startingPoint, len(indexFile)), genRnd
-            )
-        c = 0
-        lstDatasetCollection = []
+        urls = []
         for record in indexFile:
-            if cnt in random_selection or not rnd:
-                c = c + 1
-                url = record.text
-                pos = url.rfind("/xml")
-                if pos and pos + 4 == len(url):
-                    url = url.replace("/xml", "/json")
-                lstDatasetCollection.append(url)
-            cnt = cnt + 1
-        self.saveSelectedURLs(lstDatasetCollection, "SeaDataNet_CDI")
-        return lstDatasetCollection
+            url = record.text
+            pos = url.rfind("/xml")
+            if pos and pos + 4 == len(url):
+                url = url.replace("/xml", "/json")
+            urls.append(url)
+        with open(self.dataset_urls_filename, 'w') as f:
+            f.write('\n'.join(urls))
+
 
     def datasetProcessing(self, datasetURL):
         metadataStar_content = open(self.metadataStar_filename, "r")
@@ -637,7 +623,8 @@ class SeaDataNetCDIIndexer(DatasetIndexer):
 
 class SeaDataNetEDMEDIndexer(DatasetIndexer):
     source_name = 'SeaDataNet EDMED'
-    MetadataRecordsFileName = "SeaDataNet-EDMED-metadata-records.json"
+    dataset_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
+    dataset_list_ext = ".json"
     contextual_text_fields = ["name", "keywords", "measurementTechnique"]
     contextual_text_fallback_field = "abstract"
 
@@ -645,40 +632,15 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
         super().__init__()
         self.lstCoveredFeaturesSeaDataNet = []
 
-    def getDatasetRecords(self):
-        with urllib.request.urlopen(
-                'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
-                ) as f:
-            data = f.read().decode('utf-8')
-        json_data = json.loads(r'' + data)
-        indexFile = open(
-            self.MetaDataRecordPath + self.MetadataRecordsFileName, "w+"
-            )
-        indexFile.write(json.dumps(json_data))
-        indexFile.close()
-        print("SeaDataNet EDMED data collection is done!")
+    def convert_dataset_list_to_dataset_urls(self):
+        with open(self.dataset_list_filename, "r") as f:
+            data = json.load(f)
 
-    def getOnlineDatasetRecords(self, rnd, genRnd, startingPoint):
-        indexFile = open(
-            self.MetaDataRecordPath + self.MetadataRecordsFileName, "r"
-            )
-        dataset_json = json.loads(r'' + indexFile.read())
-        cnt = 1
-        random_selection = random.sample(
-            range(startingPoint, len(dataset_json["results"]["bindings"])), genRnd
-            )
-        c = 0
-        lstDatasetCollection = []
+        urls = [record["EDMEDRecord"]["value"]
+                for record in data["results"]["bindings"]]
 
-        for record in dataset_json["results"]["bindings"]:
-            if cnt in random_selection or not rnd:
-                c = c + 1
-                landingPage = record["EDMEDRecord"]["value"]
-                title = record["Title"]["value"]
-                lstDatasetCollection.append(landingPage)
-            cnt = cnt + 1
-        self.saveSelectedURLs(lstDatasetCollection, "SeaDataNet_EDMED")
-        return lstDatasetCollection
+        with open(self.dataset_urls_filename, 'w') as f:
+            f.write('\n'.join(urls))
 
     @staticmethod
     def _cleanhtml(raw_html):
@@ -861,51 +823,30 @@ class SeaDataNetEDMEDIndexer(DatasetIndexer):
 
 class ICOSIndexer(DatasetIndexer):
     source_name = 'ICOS'
-    MetadataRecordsFileName = "ICOS-metadata-records.json"
+    dataset_list_ext = ".json"
     contextual_text_fields = ["keywords", "genre", "theme", "name"]
     contextual_text_fallback_field = "Abstract"
 
-    def getDatasetRecords(self):
+    def get_dataset_list(self):
         cURL = r"""curl https://meta.icos-cp.eu/sparql -H 'Cache-Control: no-cache' -X POST --data 'query=prefix%20cpmeta%3A%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fontologies%2Fcpmeta%2F%3E%0Aprefix%20prov%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fprov%23%3E%0Aselect%20%3Fdobj%20%3Fspec%20%3FfileName%20%3Fsize%20%3FsubmTime%20%3FtimeStart%20%3FtimeEnd%0Awhere%20%7B%0A%09VALUES%20%3Fspec%20%7B%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FradonFluxSpatialL3%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fco2EmissionInventory%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FsunInducedFluorescence%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FoceanPco2CarbonFluxMaps%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FinversionModelingSpatial%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FbiosphereModelingSpatial%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoFluxesDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoEcoDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoMeteoDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoAirTempMultiLevelsDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FecoProfileMultiLevelsDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMeteoL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcLosGatosL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcPicarroL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosInversionResult%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fsocat_DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcBioMeteoRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcStorageFluxRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcBioMeteoRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcStorageFluxRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcSaheatFlagFile%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FceptometerMeasurements%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FglobalCarbonBudget%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FnationalCarbonEmissions%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FglobalMethaneBudget%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FdigHemispherPics%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcEddyFluxRawSeriesCsv%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcEddyFluxRawSeriesBin%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCh4L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCoL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCo2L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMtoL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcC14L2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcMeteoGrowingNrtDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCo2NrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCh4NrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcN2oL2DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcCoNrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcN2oNrtGrowingDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosCh4Release%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FingosN2oRelease%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatcRnNrtDataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdrought2018AtmoProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FmodelDataArchive%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcArchiveProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdought2018ArchiveProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FatmoMeasResultsArchive%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtAuxData%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcFluxnetProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2Fdrought2018FluxnetProduct%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtFluxes%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtMeteosens%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FetcNrtMeteo%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL1Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL1Product_v2%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcL2Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FicosOtcFosL2Product%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FotcL0DataObject%3E%20%3Chttp%3A%2F%2Fmeta.icos-cp.eu%2Fresources%2Fcpmeta%2FinversionModelingTimeseries%3E%7D%0A%09%3Fdobj%20cpmeta%3AhasObjectSpec%20%3Fspec%20.%0A%09%3Fdobj%20cpmeta%3AhasSizeInBytes%20%3Fsize%20.%0A%3Fdobj%20cpmeta%3AhasName%20%3FfileName%20.%0A%3Fdobj%20cpmeta%3AwasSubmittedBy%2Fprov%3AendedAtTime%20%3FsubmTime%20.%0A%3Fdobj%20cpmeta%3AhasStartTime%20%7C%20%28cpmeta%3AwasAcquiredBy%20%2F%20prov%3AstartedAtTime%29%20%3FtimeStart%20.%0A%3Fdobj%20cpmeta%3AhasEndTime%20%7C%20%28cpmeta%3AwasAcquiredBy%20%2F%20prov%3AendedAtTime%29%20%3FtimeEnd%20.%0A%09FILTER%20NOT%20EXISTS%20%7B%5B%5D%20cpmeta%3AisNextVersionOf%20%3Fdobj%7D%0A%7D%0Aorder%20by%20desc%28%3FsubmTime%29'"""
         lCmd = shlex.split(cURL)  # Splits cURL into an array
         p = subprocess.Popen(lCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()  # Get the output and the err message
         json_data = json.loads(r'' + out.decode("utf-8"))
-        indexFile = open(self.MetaDataRecordPath +
-                         self.MetadataRecordsFileName, "w+")
+        indexFile = open(self.dataset_list_filename, "w+")
         indexFile.write(json.dumps(json_data))
         indexFile.close()
         print("ICOS data collection is done!")
 
-    def getOnlineDatasetRecords(self, rnd, genRnd, startingPoint):
-        indexFile = open(self.MetaDataRecordPath +
-                         self.MetadataRecordsFileName, "r")
-        dataset_json = json.loads(r'' + indexFile.read())
+    def convert_dataset_list_to_dataset_urls(self):
+        with open(self.dataset_list_filename, "r") as f:
+            data = json.load(f)
 
-        cnt = 1
-        random_selection = random.sample(
-            range(startingPoint, len(dataset_json["results"]["bindings"])), genRnd
-            )
-        c = 0
+        urls = [record["dobj"]["value"]
+                for record in data["results"]["bindings"]]
 
-        lstDatasetCollection = []
-
-        for record in dataset_json["results"]["bindings"]:
-            if cnt in random_selection or not rnd:
-                c = c + 1
-                filename = record["fileName"]["value"]
-                landingPage = record["dobj"]["value"]
-                timeEnd = record["timeEnd"]["value"]
-                timeStart = record["timeStart"]["value"]
-                submTime = record["submTime"]["value"]
-                size = record["size"]["value"]
-                spec = record["spec"]["value"]
-                # downloadableLink= "https://data.icos-cp.eu/objects/"+os.path.basename(urlparse(landingPage).path)
-
-                lstDatasetCollection.append(landingPage)
-            cnt = cnt + 1
-        self.saveSelectedURLs(lstDatasetCollection, "ICOS")
-        return lstDatasetCollection
+        with open(self.dataset_urls_filename, 'w') as f:
+            f.write('\n'.join(urls))
 
     def datasetProcessing(self, datasetURL):
         metadataStar_content = open(self.metadataStar_filename, "r")
@@ -1059,12 +1000,12 @@ class ICOSIndexer(DatasetIndexer):
 
 class LifeWatchIndexer(DatasetIndexer):
     source_name = 'LifeWatch'
-    MetadataRecordsFileName = "LifeWatch.txt"
+    dataset_list_ext = ".txt"
     contextual_text_fields = [
         "dataset", "title", "abstract", "citation", "headline", "publisher"]
     contextual_text_fallback_field = "Abstract"
 
-    def getDatasetRecords(self):
+    def get_dataset_list(self):
         driver = webdriver.Chrome(ChromeDriverManager().install())
         driver.get(
             "https://metadatacatalogue.lifewatch.eu/srv/eng/catalog.search#/search?facet.q=type%2Fdataset&resultType=details&sortBy=relevance&from=301&to=400&fast=index&_content_type=json"
@@ -1074,29 +1015,21 @@ class LifeWatchIndexer(DatasetIndexer):
         print("Lifewatch data collection is done!")
         driver.close()
 
-    def getOnlineDatasetRecords(self, rnd, genRnd, startingPoint):
-        indexFile = os.path.join(
-            self.MetaDataRecordPath + self.MetadataRecordsFileName
-            )
-        cnt = 1
-        c = 0
-        lstDatasetCollection = []
+    def convert_dataset_list_to_dataset_urls(self):
+        indexFile = os.path.join(self.dataset_list_filename)
+        urls = []
         with open(indexFile) as f:
             lines = f.readlines()
-        random_selection = random.sample(range(startingPoint, len(lines)), genRnd)
         baseline = "https://metadatacatalogue.lifewatch.eu/srv/api/records/"
         xml = "/formatters/xml?approved=true"
         for line in lines:
-            if cnt in random_selection or not rnd:
-                datasetID = (line.split(",")[1].replace("\"", ""))
-                if not "oai:marineinfo.org:id:dataset" in datasetID:
-                    continue
-                c = c + 1
-                url = baseline
-                lstDatasetCollection.append(url + datasetID + xml)
-                cnt = cnt + 1
-        self.saveSelectedURLs(lstDatasetCollection, "LifeWatch")
-        return lstDatasetCollection
+            datasetID = (line.split(",")[1].replace("\"", ""))
+            if not "oai:marineinfo.org:id:dataset" in datasetID:
+                continue
+            url = baseline
+            urls.append(url + datasetID + xml)
+        with open(self.dataset_urls_filename, 'w') as f:
+            f.write('\n'.join(urls))
 
     def datasetProcessing(self, datasetURL):
         metadataStar_content = open(self.metadataStar_filename, "r")
