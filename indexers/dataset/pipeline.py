@@ -1124,7 +1124,7 @@ class SIOSIndexer(DatasetIndexer):
             with urllib.request.urlopen(url) as r:
                 response = json.load(r)
             return response
-        except urllib.error.HTTPError:
+        except (urllib.error.HTTPError, urllib.error.URLError):
             print(f'Could not open {url}, skipping')
             empty_response = {
                 'numberReturned': 0,
@@ -1136,11 +1136,12 @@ class SIOSIndexer(DatasetIndexer):
         response = self._get_dataset_list_page(0)
         datasets = response['features']
         page = 1
+        print('Listing datasets (this might take a while)')
         while response['numberReturned']:
-            print(page, len(datasets))
             response = self._get_dataset_list_page(page)
             datasets += response['features']
             page += 1
+        print('done')
 
         with open(self.dataset_list_filename, 'w') as f:
             json.dump(datasets, f)
@@ -1164,7 +1165,7 @@ class SIOSIndexer(DatasetIndexer):
             return
 
         creator = 'Norwegian Meteorological Institute'
-        spatial_extent = dataset_metadata['properties']['extents']['spatial']
+        spatial_extent = str(dataset_metadata['properties']['extents']['spatial'])
 
         index_record = {
             'url': url,
@@ -1186,14 +1187,15 @@ class SIOSIndexer(DatasetIndexer):
             'abstract': dataset_metadata['properties']['description'],
             }
 
-        for link in dataset_metadata['associations']:
-            if link['type'] == 'WWW:DOWNLOAD-1.0-http--download':
-                index_record['distributionInfo'] = link['href']
-                break
-        if ('distributionInfo' not in index_record
-                and dataset_metadata['associations']):
-            fallback_link = dataset_metadata['associations'][0]['href']
-            index_record['distributionInfo'] = fallback_link
+        if 'associations' in dataset_metadata:
+            for link in dataset_metadata['associations']:
+                if link['type'] == 'WWW:DOWNLOAD-1.0-http--download':
+                    index_record['distributionInfo'] = link['href']
+                    break
+            if ('distributionInfo' not in index_record
+                    and dataset_metadata['associations']):
+                fallback_link = dataset_metadata['associations'][0]['href']
+                index_record['distributionInfo'] = fallback_link
 
         index_record["potentialTopics"] = self.topicMining(dataset_metadata)
 
