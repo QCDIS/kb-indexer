@@ -122,9 +122,11 @@ class GithubNotebookSearcher(_NotebookSearcher):
             )
         data = []
         results_per_page = 30  # from API documentation
+        self._wait_for_available_search_rate(g)
+        results_count = result.totalCount
         pages_with_results = (
-            (result.totalCount // results_per_page)
-            + int(bool(result.totalCount % results_per_page))
+            (results_count // results_per_page)
+            + int(bool(results_count % results_per_page))
             )
         for page in range(min(page_range, pages_with_results)):
             self._wait_for_available_search_rate(g)
