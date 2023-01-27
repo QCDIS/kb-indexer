@@ -87,10 +87,6 @@ class ElasticsearchIndexer:
         if not index.exists():
             self._apply_index_settings(index)
             index.create()
-        else:
-            index.close()
-            self._apply_index_settings(index)
-            index.open()
         return index
 
     def is_in_index(self, field_name, value) -> bool:
