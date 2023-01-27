@@ -94,7 +94,7 @@ class DatasetIndexer:
     contextual_text_fallback_field: str
 
     def __init__(self):
-        self.indexer = utils.ElasticsearchIndexer('envri-test')
+        self.indexer = utils.ElasticsearchIndexer('envri')
         self.lt = LanguageTools()
 
         cwd = os.path.dirname(__file__)
@@ -434,7 +434,12 @@ class DatasetIndexer:
                 self.list_index_record_files(),
                 desc='ingesting indexes'
                 ):
-            record = open_file(record_file)
+            try:
+                record = open_file(record_file)
+            except json.decoder.JSONDecodeError:
+                print('skipping', record_file)
+                continue
+
             id_ = utils.gen_id_from_url(record['url'])
             self.indexer.ingest_record(id_, record)
 
