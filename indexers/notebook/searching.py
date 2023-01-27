@@ -154,7 +154,7 @@ def main():
     df_queries = pd.read_csv(
         os.path.join(
             os.path.dirname(__file__),
-            'data_sources/kaggle_crawler_queries.csv'
+            'data_sources/envri_queries.csv'
             )
         )
     queries = df_queries['queries'].values
