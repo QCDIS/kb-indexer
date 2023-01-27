@@ -454,7 +454,8 @@ class DatasetIndexer:
         for url in tqdm(urls, desc='generating dataset records'):
             if not self.url_is_indexed(url):
                 self.gen_record_from_url(url)
-        self.ingest_record_files()
+                self.ingest_record_files()
+                self.clear_index_record_files()
 
 
 class SeaDataNetCDIIndexer(DatasetIndexer):
