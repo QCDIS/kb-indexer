@@ -63,7 +63,15 @@ def is_valid(url):
     return bool(parsed.netloc) and bool(parsed.scheme)
 
 
-def get_all_website_links(url):
+def is_internal_url(url, domain_names):
+    for internal_domain in domain_names:
+        url_domain = urlparse(url).netloc
+        if internal_domain in url_domain:
+            return True
+    return False
+
+
+def get_all_website_links(url, domain_names):
 
     """ Returns all URLs that is found on `url` in which it belongs to the
     same website
@@ -72,7 +80,6 @@ def get_all_website_links(url):
     # all URLs of `url`
     urls = set()
     # domain name of the URL without the protocol
-    domain_name = urlparse(url).netloc
     soup = ""
     cnt = 0
     while soup == '':
@@ -111,7 +118,7 @@ def get_all_website_links(url):
         if href in internal_urls:
             # already in the set
             continue
-        if domain_name not in href:
+        if not is_internal_url(href, domain_names):
             # external link
             if href not in external_urls:
                 print(f"{GRAY}[!] External link: {href}{RESET}")
@@ -239,7 +246,7 @@ def extractImages(url, html):
     return imagelist
 
 
-def crawl(url):
+def crawl(url, domain_names):
     global max_urls
     global total_urls_visited
     total_urls_visited += 1
@@ -253,21 +260,21 @@ def crawl(url):
                  not in url)
             ):
         print(f"{YELLOW}[*] Crawling: {url}{RESET}")
-        links = get_all_website_links(url)
+        links = get_all_website_links(url, domain_names)
         for link in links:
             if total_urls_visited > max_urls:
                 break
-            crawl(link)
+            crawl(link, domain_names)
 
 
-def runCrawler(website):
+def runCrawler(website, domain_names):
     global config
 
     permitted_urls.clear()
     internal_urls.clear()
     external_urls.clear()
 
-    crawl(website)
+    crawl(website, domain_names)
 
 
 def printResults():
@@ -409,8 +416,8 @@ def indexWebpage(url):
         return {}
 
 
-def indexWebsite(url):
-    runCrawler(url)
+def indexWebsite(url, domain_names):
+    runCrawler(url, domain_names)
     cnt = 0
     print("-------------------")
     for url in permitted_urls:
@@ -446,8 +453,10 @@ def envriCrawler():
         permitted_urls.clear()
         total_urls_visited = 0
 
-        url = ResearchInfrastructures[IR]['url']
-        indexWebsite(url)
+        indexWebsite(
+            ResearchInfrastructures[IR]['url'],
+            ResearchInfrastructures[IR]['domain_names'],
+            )
 
     # url="http://mediawiki.envri.eu/index.php/Special:WhatLinksHere/%C3%83%C2%90%C3%82%C2%9C%C3%83%C2%90%C3%82%C2%BE%C3%83%C2%90%C3%82%C2%B1%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%91%C3%82%C2%8C%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%91%C3%82%C2%8F_%C3%83%C2%90%C3%82%C2%B2%C3%83%C2%90%C3%82%C2%B5%C3%83%C2%91%C3%82%C2%80%C3%83%C2%91%C3%82%C2%81%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%91%C3%82%C2%8F_%C3%83%C2%90%C3%82%C2%BE%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%B9%C3%83%C2%90%C3%82%C2%BD_%C3%83%C2%90%C3%82%C2%BA%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%B7%C3%83%C2%90%C3%82%C2%B8%C3%83%C2%90%C3%82%C2%BD%C3%83%C2%90%C3%82%C2%BE_%C3%83%C2%90%C3%82%C2%92%C3%83%C2%91%C3%82%C2%83%C3%83%C2%90%C3%82%C2%BB%C3%83%C2%90%C3%82%C2%BA%C3%83%C2%90%C3%82%C2%B0%C3%83%C2%90%C3%82%C2%BD"
     # print(validators.url(url))
@@ -460,8 +469,10 @@ def index_all_research_infrastructures():
         permitted_urls.clear()
         total_urls_visited = 0
 
-        url = ResearchInfrastructures[IR]['url']
-        indexWebsite(url)
+        indexWebsite(
+            ResearchInfrastructures[IR]['url'],
+            ResearchInfrastructures[IR]['domain_names'],
+            )
 
 
 if __name__ == "__main__":
