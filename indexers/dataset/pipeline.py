@@ -1166,8 +1166,19 @@ class SIOSIndexer(DatasetIndexer):
         try:
             with urllib.request.urlopen(url) as r:
                 dataset_metadata = json.load(r)
-        except urllib.error.HTTPError:
+        except (urllib.error.HTTPError, urllib.error.URLError):
             print(f'Could not open {url}, skipping')
+            return
+
+        if 'properties' not in dataset_metadata:
+            print('no properties', url)
+            return
+        for k in ['extents', 'title', 'recordUpdated', 'keywords', 'description']:
+            if k not in dataset_metadata['properties']:
+                print(f'no properties.{k}', url)
+                return
+        if 'spatial' not in dataset_metadata['properties']['extents']:
+            print(f'no properties.extents.spatial', url)
             return
 
         creator = 'Norwegian Meteorological Institute'
