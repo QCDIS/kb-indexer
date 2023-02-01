@@ -388,12 +388,15 @@ def remove_tags(raw_html):
 
 
 def getResearchInfrastructure(url):
-    lstRI = []
-    for RI in ResearchInfrastructures:
-        if RI in url:
-            if ResearchInfrastructures[RI]['acronym'] not in lstRI:
-                lstRI.append(ResearchInfrastructures[RI])
-    return lstRI
+    url_RIs = {}
+    for RI_key, RI_meta in ResearchInfrastructures.items():
+        for RI_domain in RI_meta['domain_names']:
+            if RI_domain in url:
+                url_RIs[RI_key] = RI_meta
+                continue
+    if not url_RIs:
+        raise ValueError('Could not determine RI for', url)
+    return list(url_RIs.values())
 
 
 def indexWebpage(url):
