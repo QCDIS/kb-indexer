@@ -1,15 +1,14 @@
+version: '2'
+
 services:
   elasticsearch: 
-    build: ./elasticsearch
-    image: local_test/elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
     container_name: local_test_elasticsearch
-#    volumes:
-#      - ./elasticsearch/data:/usr/share/elasticsearch/data
-#      - ./elasticsearch/logs:/usr/share/elasticsearch/logs
     environment:
       - discovery.type=single-node
       - cluster.name=es_dataserver
       - node.name=es01
       - TAKE_FILE_OWNERSHIP=true 
+    mem_limit: 1G
     ports:
-      - 9200:9200
+      - '9200:9200'
