@@ -406,6 +406,9 @@ class DatasetIndexer:
         for k in ['potentialTopics', 'EssentialVariables']:
             record[k] = self.pruneExtractedContextualInformation(
                 record[k], extracted_contextual_information)
+        for k, v in record.items():
+            if not isinstance(v, list):
+                record[k] = [v]
         return record
 
     def save_index_record(self, record):
