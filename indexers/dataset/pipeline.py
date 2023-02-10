@@ -20,18 +20,7 @@ class Pipeline(abc.ABC):
         self.indexer = self.repo.indexer(paths)
 
     def run(self):
-        self.indexer.clear_index_record_files()
-
-        print(f'indexing the {self.repo.name} dataset repository')
-        self.downloader.get_dataset_list()
-        self.downloader.convert_dataset_list_to_dataset_urls()
-
-        urls = self.downloader.get_dataset_urls()
-        for url in tqdm(urls, desc='generating dataset records'):
-            if not self.indexer.url_is_indexed(url):
-                self.mapper.gen_record_from_url(url)
-                self.indexer.ingest_record_files()
-                self.indexer.clear_index_record_files()
+        self.downloader.extract_records()
 
 
 def main():

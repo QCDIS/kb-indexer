@@ -26,7 +26,7 @@ class TwoStepDownloader(Downloader, abc.ABC):
         self.paths = paths
 
     @abc.abstractmethod
-    def record_urls(self):
+    def get_record_urls(self):
         pass
 
     @abc.abstractmethod
@@ -34,8 +34,7 @@ class TwoStepDownloader(Downloader, abc.ABC):
         pass
 
     def extract_records(self):
-        for url in tqdm(self.record_urls(), desc='extracting records'):
+        for url in tqdm(self.get_record_urls(), desc='extracting records'):
             filename = self.paths.metadata_record_filename(
                 self.paths.url_to_id(url), self.metadata_record_ext)
-            print(url, '->', filename)  # FIXME
             self.download_record(url, filename)

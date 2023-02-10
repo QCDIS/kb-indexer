@@ -15,7 +15,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader):
     dataset_list_url = 'https://cdi.seadatanet.org/report/aggregation'
     metadata_record_ext = '.json'
 
-    def record_urls(self):
+    def get_record_urls(self):
         with urllib.request.urlopen(self.dataset_list_url) as r:
             tree = ElementTree.parse(r)
         indexFile = tree.getroot()
