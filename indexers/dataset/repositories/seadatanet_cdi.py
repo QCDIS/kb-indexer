@@ -31,8 +31,6 @@ class SeaDataNetCDIDownloader(TwoStepDownloader):
     def download_record(self, url, filename):
         try:
             urllib.request.urlretrieve(url, filename)
-            with urllib.request.urlopen(url) as f:
-                return json.load(f)
         except urllib.error.HTTPError:
             print(f'Could not open {url}, skipping')
 
