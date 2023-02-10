@@ -1,11 +1,11 @@
 from ..download import Downloader
 from ..index import Indexer
-from ..map import Mapper
+from ..convert import Converter
 
 
 class Repository:
     name: str
     research_infrastructure: str
     downloader: type(Downloader)
-    mapper: type(Mapper)
+    converter: type(Converter)
     indexer: type(Indexer)

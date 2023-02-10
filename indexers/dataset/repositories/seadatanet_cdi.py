@@ -1,22 +1,21 @@
 import json
 import os
-import urllib.error
 import urllib.request
 from xml.etree import ElementTree
 
 from ... import utils
 from .common import Repository
 from ..download import TwoStepDownloader
-from ..map import Mapper, DeepSearch, flatten_list, merge_list
+from ..convert import Converter, DeepSearch, flatten_list, merge_list
 from ..index import Indexer
 
 
 class SeaDataNetCDIDownloader(TwoStepDownloader):
-    dataset_list_url = 'https://cdi.seadatanet.org/report/aggregation'
-    metadata_record_ext = '.json'
+    documents_list_url = 'https://cdi.seadatanet.org/report/aggregation'
+    document_extension = '.json'
 
-    def get_record_urls(self):
-        with urllib.request.urlopen(self.dataset_list_url) as r:
+    def get_documents_urls(self):
+        with urllib.request.urlopen(self.documents_list_url) as r:
             tree = ElementTree.parse(r)
         indexFile = tree.getroot()
         urls = []
@@ -28,29 +27,21 @@ class SeaDataNetCDIDownloader(TwoStepDownloader):
             urls.append(url)
         return urls
 
-    def download_record(self, url, filename):
-        try:
-            urllib.request.urlretrieve(url, filename)
-        except urllib.error.HTTPError:
-            print(f'Could not open {url}, skipping')
 
-
-class SeaDataNetCDIMapper(Mapper):
+class SeaDataNetCDIConverter(Converter):
     contextual_text_fields = [
         "Data set name", "Discipline", "Parameter groups",
         "Discovery parameter", "GEMET-INSPIRE themes"]
     contextual_text_fallback_field = "Abstract"
 
-    def convert_record(self, JSON):
-
+    def convert_record(self, raw_filename, converted_filename, metadata):
         with open(self.paths.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
-        indexfname = os.path.join(
-            self.paths.index_records_dir,
-            utils.gen_id_from_url(datasetURL) + '.json',
-            )
-        indexFile = open(indexfname, "w")
+        with open(raw_filename) as f:
+            JSON = json.load(f)
+
+        indexFile = open(converted_filename, "w")
         indexFile.write("{\n")
 
         originalValues = []
@@ -94,7 +85,7 @@ class SeaDataNetCDIMapper(Mapper):
                 result = self.pruneExtractedContextualInformation(
                     result, originalValues)
             elif metadata_property == "url":
-                result = datasetURL  # [str(datasetURL)]
+                result = metadata['url']
             elif metadata_property == "name":
                 result = DeepSearch().search(["Data set name"], JSON)
             else:
@@ -159,5 +150,5 @@ class SeaDataNetCDIRepository(Repository):
     research_infrastructure = 'SeaDatanet'
 
     downloader = SeaDataNetCDIDownloader
-    mapper = SeaDataNetCDIMapper
+    converter = SeaDataNetCDIConverter
     indexer = Indexer

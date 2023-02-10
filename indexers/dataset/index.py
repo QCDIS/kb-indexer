@@ -13,28 +13,24 @@ class Indexer:
         self.paths = paths
         self.indexer = utils.ElasticsearchIndexer('envri')
 
-    def list_index_record_files(self):
-        pattern = os.path.join(self.paths.index_records_dir, '*.json')
+    def list_files(self):
+        pattern = self.paths.converted_file('*')
         return sorted(glob(pattern))
 
-    def clear_index_record_files(self):
-        for filename in self.list_index_record_files():
+    def clear_files(self):
+        for filename in self.list_files():
             os.remove(filename)
 
-    def ingest_record_files(self):
-        for record_file in tqdm(
-                self.list_index_record_files(),
-                desc='ingesting indexes'
-                ):
+    def ingest_all(self):
+        for doc_filename in tqdm(self.list_files(), desc='ingesting records'):
             try:
-                with open(record_file, 'r') as f:
-                    record = json.load(f)
+                with open(doc_filename, 'r') as f:
+                    doc = json.load(f)
             except json.decoder.JSONDecodeError:
-                print('skipping', record_file)
+                print('skipping', doc_filename)
                 continue
-
-            id_ = utils.gen_id_from_url(record['url'])
-            self.indexer.ingest_record(id_, record)
+            id_ = utils.gen_id_from_url(doc['url'])
+            self.indexer.ingest_record(id_, doc)
 
     def url_is_indexed(self, url):
         return self.indexer.is_in_index('url', url)

@@ -16,11 +16,13 @@ class Pipeline(abc.ABC):
         self.repo = repo
         paths = Paths(self.repo.name)
         self.downloader = self.repo.downloader(paths)
-        self.mapper = self.repo.mapper(paths)
+        self.converter = self.repo.converter(paths)
         self.indexer = self.repo.indexer(paths)
 
     def run(self):
-        self.downloader.extract_records()
+        self.downloader.download_all()
+        self.converter.convert_all()
+        self.indexer.ingest_all()
 
 
 def main():

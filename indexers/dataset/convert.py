@@ -1,3 +1,5 @@
+from glob import glob
+from tqdm import tqdm
 import abc
 import json
 import os
@@ -16,7 +18,7 @@ from .. import utils
 from .common import Paths
 
 
-class Mapper(abc.ABC):
+class Converter(abc.ABC):
     contextual_text_fields: list[str]
     contextual_text_fallback_field: str
 
@@ -26,6 +28,24 @@ class Mapper(abc.ABC):
     def __init__(self, paths: Paths):
         self.paths = paths
         self.lt = LanguageTools(paths)
+
+    def list_metadata(self):
+        pattern = os.path.join(self.paths.meta_dir, '*.json')
+        return sorted(glob(pattern))
+
+    def convert_all(self):
+        for meta_file in tqdm(self.list_metadata(), desc='converting records'):
+            with open(meta_file, 'r') as f:
+                meta = json.load(f)
+            self.convert_record(
+                meta['filename'],
+                self.paths.converted_file(meta['id']),
+                meta,
+                )
+
+    @abc.abstractmethod
+    def convert_record(self, raw_filename, converted_filename, metadata):
+        pass
 
     def getContextualText(self, JSON):
         contextualText = DeepSearch().search(self.contextual_text_fields,
