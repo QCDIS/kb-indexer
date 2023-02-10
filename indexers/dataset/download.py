@@ -30,13 +30,16 @@ class Downloader(abc.ABC):
         with open(self.paths.meta_file(meta['id']), 'w') as f:
             json.dump(meta, f)
 
+    @staticmethod
+    def download_url(url, filename):
+        try:
+            urllib.request.urlretrieve(url, filename)
+        except urllib.error.HTTPError:
+            print(f'Could not open {url}, skipping')
+
     @abc.abstractmethod
     def download_all(self):
         pass
-
-
-class DirectDownloader(Downloader, abc.ABC):
-    pass
 
 
 class TwoStepDownloader(Downloader, abc.ABC):
@@ -46,13 +49,6 @@ class TwoStepDownloader(Downloader, abc.ABC):
     @abc.abstractmethod
     def get_documents_urls(self):
         pass
-
-    @staticmethod
-    def download_url(url, filename):
-        try:
-            urllib.request.urlretrieve(url, filename)
-        except urllib.error.HTTPError:
-            print(f'Could not open {url}, skipping')
 
     def download_all(self):
         for url in tqdm(self.get_documents_urls(), desc='downloading records'):

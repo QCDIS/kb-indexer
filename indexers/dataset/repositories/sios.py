@@ -3,84 +3,73 @@ import urllib.error
 import urllib.request
 
 from .common import Repository
-from ..download import TwoStepDownloader, DirectDownloader
-from ..map import Mapper
+from ..download import Downloader
+from ..convert import Converter
 from ..index import Indexer
 
 
-class SIOSDownloader(DirectDownloader):
-    dataset_list_url = 'https://sios.csw.met.no/collections/metadata:main/items'
+class SIOSDownloader(Downloader):
+    documents_list_url = 'https://sios.csw.met.no/collections/metadata:main/items'
+    document_extension = '.json'
 
-    def _get_dataset_list_page(self, i):
+    def _download_page(self, i):
         results_per_page = 10  # from API doc
         start_index = i * results_per_page
-        url = f'{self.dataset_list_url}?f=json&startindex={start_index}'
+        url = f'{self.documents_list_url}?f=json&startindex={start_index}'
         try:
             with urllib.request.urlopen(url) as r:
                 response = json.load(r)
-            return response
         except (urllib.error.HTTPError, urllib.error.URLError):
             print(f'Could not open {url}, skipping')
-            empty_response = {
+            response = {
                 'numberReturned': 0,
                 'features': [],
                 }
-            return empty_response
+        for feature in response['features']:
+            url = f"{self.documents_list_url}/{feature['id']}?f=json"
+            meta = self.gen_metadata(url)
+            self.save_metadata(meta)
+            self.download_url(meta['url'], meta['filename'])
 
-    def list_records(self):
-        response = self._get_dataset_list_page(0)
-        datasets = response['features']
+        return response
+
+    def download_all(self):
+        response = self._download_page(0)
         page = 1
-        print('Listing datasets (this might take a while)')
+        print('Downloading datasets (this might take a while)')
         while response['numberReturned']:
-            response = self._get_dataset_list_page(page)
-            datasets += response['features']
+            response = self._download_page(page)
             page += 1
+            break
         print('done')
 
-        with open(self.paths.dataset_list_filename, 'w') as f:
-            json.dump(datasets, f)
 
-    def convert_dataset_list_to_dataset_urls(self):
-        with open(self.paths.dataset_list_filename, "r") as f:
-            datasets = json.load(f)
-
-        urls = [f"{self.dataset_list_url}/{feature['id']}?f=json"
-                for feature in datasets]
-
-        with open(self.paths.dataset_urls_filename, 'w') as f:
-            f.write('\n'.join(urls))
-
-
-class SIOSMapper(Mapper):
+class SIOSConverter(Converter):
     contextual_text_fields = ["title", "keywords", "description"]
     contextual_text_fallback_field = "description"
     RI = 'SIOS'
 
-    def gen_record_from_url(self, url):
-        try:
-            with urllib.request.urlopen(url) as r:
-                dataset_metadata = json.load(r)
-        except (urllib.error.HTTPError, urllib.error.URLError):
-            print(f'Could not open {url}, skipping')
-            return
+    def convert_record(self, raw_filename, converted_filename, metadata):
+
+        with open(raw_filename) as f:
+            dataset_metadata = json.load(f)
 
         if 'properties' not in dataset_metadata:
-            print('no properties', url)
+            print('no properties', metadata['url'])
             return
         for k in ['extents', 'title', 'recordUpdated', 'keywords', 'description']:
             if k not in dataset_metadata['properties']:
-                print(f'no properties.{k}', url)
+                print(f'no properties.{k}', metadata['url'])
                 return
         if 'spatial' not in dataset_metadata['properties']['extents']:
-            print(f'no properties.extents.spatial', url)
+            print(f'no properties.extents.spatial', metadata['url'])
             return
 
         creator = 'Norwegian Meteorological Institute'
         spatial_extent = str(dataset_metadata['properties']['extents']['spatial'])
 
         index_record = {
-            'url': url,
+            'url': metadata['url'],
             'ResearchInfrastructure': self.RI,
             'name': dataset_metadata['properties']['title'],
             'copyrightHolder': creator,
@@ -118,7 +107,7 @@ class SIOSMapper(Mapper):
             )
 
         index_record = self.post_process_index_record(index_record)
-        self.save_index_record(index_record)
+        self.save_index_record(index_record, converted_filename)
 
 
 class SIOSRepository(Repository):
@@ -126,5 +115,5 @@ class SIOSRepository(Repository):
     research_infrastructure = 'SIOS'
 
     downloader = SIOSDownloader
-    mapper = SIOSMapper
+    converter = SIOSConverter
     indexer = Indexer

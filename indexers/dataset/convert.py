@@ -330,12 +330,8 @@ class Converter(abc.ABC):
                 record[k] = [v]
         return record
 
-    def save_index_record(self, record):
-        index_record_filename = os.path.join(
-            self.paths.index_records_dir,
-            utils.gen_id_from_url(record['url']) + '.json',
-            )
-        with open(index_record_filename, 'w') as f:
+    def save_index_record(self, record, filename):
+        with open(filename, 'w') as f:
             json.dump(record, f)
 
     def gen_record_from_url(self, datasetURL):
