@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import urllib.request
 import string
 
 import requests.exceptions
@@ -8,34 +9,23 @@ import requests.exceptions
 from ... import utils
 from .common import Repository
 from ..download import TwoStepDownloader
-from ..map import Mapper, get_html_tags
+from ..convert import Converter, get_html_tags
 from ..index import Indexer
 
 
 class SeaDataNetEDMEDDownloader(TwoStepDownloader):
-    dataset_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
+    documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
+    document_extension = '.html'
 
-    def record_urls(self):
-        urllib.request.urlretrieve(
-            self.dataset_list_url, self.paths.dataset_list_filename)
-
-        # ------------
-        with open(self.paths.dataset_list_filename, "r") as f:
-            data = json.load(f)
-
+    def get_documents_urls(self):
+        with urllib.request.urlopen(self.documents_list_url) as r:
+            data = json.load(r)
         urls = [record["EDMEDRecord"]["value"]
                 for record in data["results"]["bindings"]]
-
-        with open(self.paths.dataset_urls_filename, 'w') as f:
-            f.write('\n'.join(urls))
-
-        # ------------
-        with open(self.paths.dataset_urls_filename, 'r') as f:
-            urls = [line.strip() for line in f.readlines()]
         return urls
 
 
-class SeaDataNetEDMEDMapper(Mapper):
+class SeaDataNetEDMEDConverter(Converter):
     contextual_text_fields = ["name", "keywords", "measurementTechnique"]
     contextual_text_fallback_field = "abstract"
 
@@ -58,21 +48,14 @@ class SeaDataNetEDMEDMapper(Mapper):
                 self.lstCoveredFeaturesSeaDataNet.append(searchTerm)
                 return self._cleanhtml(datasetContent)[len(searchTerm):]
 
-    def gen_record_from_url(self, datasetURL):
-        try:
-            datasetContents = get_html_tags(datasetURL, "tr")
-        except requests.exceptions.ConnectionError:
-            print(f'Could not open {datasetURL}, skipping')
-            return
-
+    def convert_record(self, raw_filename, converted_filename, metadata):
         with open(self.paths.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
-        indexfname = os.path.join(
-            self.paths.index_records_dir,
-            utils.gen_id_from_url(datasetURL) + '.json',
-            )
-        indexFile = open(indexfname, "w")
+        with open(raw_filename, 'rb') as f:
+            datasetContents = get_html_tags(f, "tr")
+
+        indexFile = open(converted_filename, "w")
         indexFile.write("{\n")
 
         originalValues = []
@@ -82,7 +65,7 @@ class SeaDataNetEDMEDMapper(Mapper):
         self.lstCoveredFeaturesSeaDataNet.clear()
         mapping = {}
         cnt = 0
-        mapping["url"] = str(datasetURL)
+        mapping["url"] = metadata['url']
         mapping["ResearchInfrastructure"] = "SeaDataNet"
         RI = "SeaDataNet"
 
@@ -219,5 +202,5 @@ class SeaDataNetEDMEDRepository(Repository):
     research_infrastructure = 'SeaDatanet'
 
     downloader = SeaDataNetEDMEDDownloader
-    mapper = SeaDataNetEDMEDMapper
+    converter = SeaDataNetEDMEDConverter
     indexer = Indexer

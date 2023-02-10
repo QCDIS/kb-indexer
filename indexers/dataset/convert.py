@@ -389,9 +389,8 @@ class LanguageTools:
         return synonyms
 
 
-def get_html_tags(url, tag):
-    with requests.get(url) as f:
-        soup = BeautifulSoup(f.content, 'lxml')
+def get_html_tags(f, tag):
+    soup = BeautifulSoup(f, 'lxml')
     return soup.find_all(tag)
 
 
