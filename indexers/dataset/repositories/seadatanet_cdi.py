@@ -6,17 +6,18 @@ from xml.etree import ElementTree
 
 from ... import utils
 from .common import Repository
-from ..download import Downloader
+from ..download import TwoStepDownloader
 from ..map import Mapper, DeepSearch, flatten_list, merge_list
 from ..index import Indexer
 
 
-class SeaDataNetCDIDownloader(Downloader):
+class SeaDataNetCDIDownloader(TwoStepDownloader):
     dataset_list_url = 'https://cdi.seadatanet.org/report/aggregation'
-    dataset_list_ext = ".xml"
+    metadata_record_ext = '.json'
 
-    def convert_dataset_list_to_dataset_urls(self):
-        tree = ElementTree.parse(self.paths.dataset_list_filename)
+    def record_urls(self):
+        with urllib.request.urlopen(self.dataset_list_url) as r:
+            tree = ElementTree.parse(r)
         indexFile = tree.getroot()
         urls = []
         for record in indexFile:
@@ -25,8 +26,15 @@ class SeaDataNetCDIDownloader(Downloader):
             if pos and pos + 4 == len(url):
                 url = url.replace("/xml", "/json")
             urls.append(url)
-        with open(self.paths.dataset_urls_filename, 'w') as f:
-            f.write('\n'.join(urls))
+        return urls
+
+    def download_record(self, url, filename):
+        try:
+            urllib.request.urlretrieve(url, filename)
+            with urllib.request.urlopen(url) as f:
+                return json.load(f)
+        except urllib.error.HTTPError:
+            print(f'Could not open {url}, skipping')
 
 
 class SeaDataNetCDIMapper(Mapper):
@@ -35,14 +43,7 @@ class SeaDataNetCDIMapper(Mapper):
         "Discovery parameter", "GEMET-INSPIRE themes"]
     contextual_text_fallback_field = "Abstract"
 
-    def gen_record_from_url(self, datasetURL):
-        try:
-            with urllib.request.urlopen(datasetURL) as f:
-                data = f.read().decode('utf-8')
-        except urllib.error.HTTPError:
-            print(f'Could not open {datasetURL}, skipping')
-            return
-        JSON = json.loads(r'' + data)
+    def convert_record(self, JSON):
 
         with open(self.paths.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())

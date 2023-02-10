@@ -1,5 +1,6 @@
 import os
 
+from .. import utils
 
 class Paths:
     def __init__(self, repo_name: str):
@@ -10,12 +11,10 @@ class Paths:
 
         # repository data
         repo_dir = self._add_dir(data_dir, repo_name)
+        self.metadata_records_dir = self._add_dir(
+            repo_dir, 'metadata_records')
         self.index_records_dir = self._add_dir(
             repo_dir, 'index_records')
-        self.dataset_list_filename = os.path.join(
-            repo_dir, f'dataset_list.xxx')  # FIXME
-        self.dataset_urls_filename = os.path.join(
-            repo_dir, f'dataset_urls.txt')
 
         # metadata
         metadata_dir = os.path.join(os.path.dirname(__file__), 'data_sources')
@@ -35,3 +34,10 @@ class Paths:
         dirname = os.path.join(*path)
         os.makedirs(dirname, exist_ok=True)
         return dirname
+
+    @staticmethod
+    def url_to_id(url):
+        return utils.gen_id_from_url(url)
+
+    def metadata_record_filename(self, id_, ext):
+        return os.path.join(self.metadata_records_dir, id_ + ext)

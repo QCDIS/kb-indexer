@@ -7,16 +7,19 @@ import requests.exceptions
 
 from ... import utils
 from .common import Repository
-from ..download import Downloader
+from ..download import TwoStepDownloader
 from ..map import Mapper, get_html_tags
 from ..index import Indexer
 
 
-class SeaDataNetEDMEDDownloader(Downloader):
+class SeaDataNetEDMEDDownloader(TwoStepDownloader):
     dataset_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
-    dataset_list_ext = ".json"
 
-    def convert_dataset_list_to_dataset_urls(self):
+    def record_urls(self):
+        urllib.request.urlretrieve(
+            self.dataset_list_url, self.paths.dataset_list_filename)
+
+        # ------------
         with open(self.paths.dataset_list_filename, "r") as f:
             data = json.load(f)
 
@@ -26,8 +29,10 @@ class SeaDataNetEDMEDDownloader(Downloader):
         with open(self.paths.dataset_urls_filename, 'w') as f:
             f.write('\n'.join(urls))
 
-    def extract_datasets(self):
-        raise NotImplemented  # TODO
+        # ------------
+        with open(self.paths.dataset_urls_filename, 'r') as f:
+            urls = [line.strip() for line in f.readlines()]
+        return urls
 
 
 class SeaDataNetEDMEDMapper(Mapper):

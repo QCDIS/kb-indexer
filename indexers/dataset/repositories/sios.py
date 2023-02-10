@@ -3,14 +3,13 @@ import urllib.error
 import urllib.request
 
 from .common import Repository
-from ..download import Downloader
+from ..download import TwoStepDownloader, DirectDownloader
 from ..map import Mapper
 from ..index import Indexer
 
 
-class SIOSDownloader(Downloader):
+class SIOSDownloader(DirectDownloader):
     dataset_list_url = 'https://sios.csw.met.no/collections/metadata:main/items'
-    dataset_list_ext = '.json'
 
     def _get_dataset_list_page(self, i):
         results_per_page = 10  # from API doc
@@ -28,7 +27,7 @@ class SIOSDownloader(Downloader):
                 }
             return empty_response
 
-    def get_dataset_list(self):
+    def list_records(self):
         response = self._get_dataset_list_page(0)
         datasets = response['features']
         page = 1

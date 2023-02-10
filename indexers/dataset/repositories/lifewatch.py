@@ -9,15 +9,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from ... import utils
 from .common import Repository
-from ..download import Downloader
+from ..download import TwoStepDownloader
 from ..map import Mapper, DeepSearch, flatten_list, merge_list
 from ..index import Indexer
 
 
-class LifeWatchDownloader(Downloader):
-    dataset_list_ext = ".txt"
+class LifeWatchDownloader(TwoStepDownloader):
 
-    def get_dataset_list(self):
+    def record_urls(self):
         driver = webdriver.Chrome(ChromeDriverManager().install())
         driver.get(
             "https://metadatacatalogue.lifewatch.eu/srv/eng/catalog.search#/search?facet.q=type%2Fdataset&resultType=details&sortBy=relevance&from=301&to=400&fast=index&_content_type=json"
@@ -27,7 +26,7 @@ class LifeWatchDownloader(Downloader):
         print("Lifewatch data collection is done!")
         driver.close()
 
-    def convert_dataset_list_to_dataset_urls(self):
+        # ------------
         indexFile = os.path.join(self.paths.dataset_list_filename)
         urls = []
         with open(indexFile) as f:
@@ -42,6 +41,11 @@ class LifeWatchDownloader(Downloader):
             urls.append(url + datasetID + xml)
         with open(self.paths.dataset_urls_filename, 'w') as f:
             f.write('\n'.join(urls))
+
+        # ------------
+        with open(self.paths.dataset_urls_filename, 'r') as f:
+            urls = [line.strip() for line in f.readlines()]
+        return urls
 
 
 class LifeWatchMapper(Mapper):
