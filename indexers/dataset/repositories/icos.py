@@ -1,12 +1,12 @@
 import json
-import urllib.parse
-import requests
 import textwrap
 
-from ... import utils
+from bs4 import BeautifulSoup
+import requests
+
 from .common import Repository
 from ..download import TwoStepDownloader
-from ..convert import Converter, DeepSearch, flatten_list, get_html_tags
+from ..convert import Converter
 from ..index import Indexer
 
 
@@ -48,126 +48,46 @@ class ICOSDownloader(TwoStepDownloader):
 class ICOSConverter(Converter):
     contextual_text_fields = ["keywords", "genre", "theme", "name"]
     contextual_text_fallback_field = "Abstract"
+    RI = 'ICOS'
 
     def convert_record(self, raw_filename, converted_filename, metadata):
-        with open(self.paths.metadataStar_filename, "r") as f:
-            metadataStar_object = json.loads(f.read())
-
         with open(raw_filename, 'rb') as f:
-            scripts = get_html_tags(f, "script")
+            soup = BeautifulSoup(f, 'lxml')
 
-        indexFile = open(converted_filename, "w")
-        indexFile.write("{\n")
+        script = soup.find('script', attrs={'type': 'application/ld+json'})
+        raw_doc = json.loads(script.text)
 
-        for script in scripts:
-            if '<script type="application/ld+json">' in str(script):
-                script = str(script)
-                start = (script.find('<script type="application/ld+json">')
-                         + len('<script type="application/ld+json">'))
-                end = script.find("</script>")
-                script = script[start:end]
-                JSON = json.loads(r'' + script)
-                RI = ""
-                domains = ""
-                topics = []
-                originalValues = []
-                cnt = 0
-                for metadata_property in metadataStar_object:
-                    cnt = cnt + 1
+        converted_doc = {
+            'ResearchInfrastructure': self.get_RI(raw_doc),
+            'url': metadata['url'],
+            'acquireLicensePage': raw_doc['acquireLicensePage'],
+            'contact': raw_doc['name'],
+            'contentInfo': raw_doc['name'],
+            'creator': [c['name'] for c in raw_doc['creator']],
+            'datePublished': raw_doc['datePublished'],
+            'description': raw_doc['description'],
+            'distribution': raw_doc['distribution']['contentUrl'],
+            'distributionInfo': raw_doc['distribution']['contentUrl'],
+            'identifier': raw_doc['identifier'],
+            'keywords': raw_doc['keywords'],
+            'language': [lang['name'] for lang in raw_doc['inLanguage']],
+            'license': raw_doc['license'],
+            'modificationDate': raw_doc['dateModified'],
+            'name': raw_doc['name'],
+            'publisher': raw_doc['publisher']['name'],
+            'spatialCoverage': raw_doc['spatialCoverage'][0][
+                'containedInPlace']['name'],
+            'temporalCoverage': raw_doc['temporalCoverage'],
+            'abstract': '',
+            }
 
-                    if metadata_property == "ResearchInfrastructure":
-                        result = self.getRI(JSON)
-                    elif metadata_property == "theme":
-                        if not len(RI):
-                            # RI= self.getRI(JSON)
-                            RI = "ICOS"
-                        if not len(domains):
-                            domains = self.getDomain(RI)
-                        if not len(topics):
-                            topics = self.topicMining(JSON)
-                        result = self.getTopicsByDomainVocabulareis(
-                            topics, domains[0])
-                    elif metadata_property == "potentialTopics":
-                        if not len(topics):
-                            topics = self.topicMining(JSON)
-                        result = topics
-                        result = self.pruneExtractedContextualInformation(
-                            result, originalValues)
-                    elif metadata_property == "EssentialVariables":
-                        if not len(RI):
-                            RI = self.getRI(JSON)
-                        if not len(domains):
-                            domains = self.getDomain(RI)
-                        if not len(topics):
-                            topics = self.topicMining(JSON)
-                        essentialVariables = self.getDomainEssentialVariables(
-                            domains[0])
-                        result = self.getSimilarEssentialVariables(
-                            essentialVariables, topics)
-                        result = self.pruneExtractedContextualInformation(
-                            result, originalValues)
-                    elif metadata_property == "url":
-                        result = metadata['url']
-                    else:
-                        result = DeepSearch().search([metadata_property], JSON)
-                        if not len(result):
-                            searchFields = []
-                            m = metadataStar_object[metadata_property]
-                            for i in range(3, len(m)):
-                                result = DeepSearch().search([m[i]], JSON)
-                                if len(result):
-                                    searchFields.append(result)
-                            result = searchFields
-                    propertyDatatype = metadataStar_object[metadata_property][
-                        0]
-                    # if metadata_property!="url":
-                    result = self.refineResults(
-                        result, propertyDatatype, metadata_property)
-
-                    if cnt == len(metadataStar_object):
-                        extrachar = "\n"
-                    else:
-                        extrachar = ",\n"
-
-                    flattenValue = str(flatten_list(result))
-                    if flattenValue == "[None]":
-                        flattenValue = "[]"
-
-                    if (
-                            metadata_property == "description"
-                            or metadata_property == "keywords"
-                            or metadata_property == "abstract"):
-                        txtVal = (flattenValue.replace("[", "")
-                                  .replace("]", "")
-                                  .replace("'", "")
-                                  .replace("\"", "")
-                                  .replace("\"\"", "")
-                                  .replace("None", ""))
-                        if txtVal != "":
-                            originalValues.append(txtVal)
-
-                    if metadata_property == "landingPage":
-                        flattenValue = "[]"
-
-                    indexFile.write(
-                        "\""
-                        + str(metadata_property)
-                        + "\" :"
-                        + flattenValue.replace("']", "\"]")
-                        .replace("['", "[\"")
-                        .replace("',", "\",")
-                        .replace(", '", ", \"")
-                        .replace("\"\"", "\"")
-                        + extrachar
-                        )
-
-        indexFile.write("}")
-        indexFile.close()
+        self.language_extraction(raw_doc, converted_doc)
+        self.post_process_doc(converted_doc)
+        self.save_index_record(converted_doc, converted_filename)
 
 
 class ICOSRepository(Repository):
     name = 'ICOS'
-    research_infrastructure = 'ICOS'
 
     downloader = ICOSDownloader
     converter = ICOSConverter

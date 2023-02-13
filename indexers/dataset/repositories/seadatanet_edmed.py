@@ -1,15 +1,13 @@
 import json
-import os
 import re
-import urllib.request
 import string
 
-import requests.exceptions
+from bs4 import BeautifulSoup
+import urllib.request
 
-from ... import utils
 from .common import Repository
 from ..download import TwoStepDownloader
-from ..convert import Converter, get_html_tags
+from ..convert import Converter
 from ..index import Indexer
 
 
@@ -28,10 +26,10 @@ class SeaDataNetEDMEDDownloader(TwoStepDownloader):
 class SeaDataNetEDMEDConverter(Converter):
     contextual_text_fields = ["name", "keywords", "measurementTechnique"]
     contextual_text_fallback_field = "abstract"
+    RI = "SeaDataNet"
 
     def __init__(self, paths):
         super().__init__(paths)
-        self.lstCoveredFeaturesSeaDataNet = []
 
     @staticmethod
     def _cleanhtml(raw_html):
@@ -40,166 +38,50 @@ class SeaDataNetEDMEDConverter(Converter):
         res = ''.join(x for x in cleantext if x in string.printable)
         return res.replace("'", "").replace("\"", "").strip()
 
-    def getValueHTML(self, searchTerm, datasetContents):
-        for datasetContent in datasetContents:
-            datasetContent = str(datasetContent)
-            if (searchTerm in datasetContent
-                    and searchTerm not in self.lstCoveredFeaturesSeaDataNet):
-                self.lstCoveredFeaturesSeaDataNet.append(searchTerm)
-                return self._cleanhtml(datasetContent)[len(searchTerm):]
-
     def convert_record(self, raw_filename, converted_filename, metadata):
-        with open(self.paths.metadataStar_filename, "r") as f:
-            metadataStar_object = json.loads(f.read())
-
         with open(raw_filename, 'rb') as f:
-            datasetContents = get_html_tags(f, "tr")
+            soup = BeautifulSoup(f, 'lxml')
 
-        indexFile = open(converted_filename, "w")
-        indexFile.write("{\n")
+        raw_doc = dict()
+        for tr in soup.find_all('tr'):
+            th = tr.findChild('th')
+            if th:
+                raw_doc[th.text] = tr.findChild('td').text
 
-        originalValues = []
+        converted_doc = {
+            'url': metadata['url'],
+            'name': raw_doc['Data set name'],
+            'ResearchInfrastructure': 'SeaDataNet',
+            'copyrightHolder': raw_doc['Data holding centre'],
+            'contributor': raw_doc['Data holding centre'],
+            'locationCreated': raw_doc['Country'],
+            'contentLocation': raw_doc['Country'],
+            "contentReferenceTime": raw_doc["Time period"],
+            "datePublished": raw_doc["Time period"],
+            "dateCreated": raw_doc["Time period"],
+            "spatialCoverage": raw_doc["Geographical area"],
+            "keywords": raw_doc["Parameters"],
+            "measurementTechnique": raw_doc["Instruments"],
+            "description": raw_doc["Summary"],
+            "abstract": raw_doc["Summary"],
+            "creator": raw_doc["Originators"],
+            "distributionInfo": raw_doc["Data holding centre"],
+            "publisher": raw_doc["Organisation"],
+            "author": raw_doc["Contact"],
+            "contact": raw_doc["Address"],
+            "producer": raw_doc["Collating centre"],
+            "provider": raw_doc["Collating centre"],
+            "identifier": raw_doc["Local identifier"],
+            "modificationDate": raw_doc["Last revised"],
+            }
 
-        EDMED_JSON = {}
-
-        self.lstCoveredFeaturesSeaDataNet.clear()
-        mapping = {}
-        cnt = 0
-        mapping["url"] = metadata['url']
-        mapping["ResearchInfrastructure"] = "SeaDataNet"
-        RI = "SeaDataNet"
-
-        value = (self.getValueHTML("Data set name", datasetContents))
-        mapping["name"] = str(value)
-        EDMED_JSON["name"] = value
-
-        value = (self.getValueHTML("Data holding centre", datasetContents))
-        mapping["copyrightHolder"] = str(value)
-        mapping["contributor"] = str(value)
-        EDMED_JSON["contributor"] = value
-
-        value = (self.getValueHTML("Country", datasetContents))
-        mapping["locationCreated"] = str(value)
-        mapping["contentLocation"] = str(value)
-        EDMED_JSON["contentLocation"] = value
-
-        value = (self.getValueHTML("Time period", datasetContents))
-        mapping["contentReferenceTime"] = str(value)
-        mapping["datePublished"] = str(value)
-        mapping["dateCreated"] = str(value)
-        EDMED_JSON["dateCreated"] = value
-
-        value = (self.getValueHTML("Geographical area", datasetContents))
-        mapping["spatialCoverage"] = str(value)
-        EDMED_JSON["spatialCoverage"] = value
-
-        value = (self.getValueHTML("Parameters", datasetContents))
-        mapping["keywords"] = str(value)
-        EDMED_JSON["keywords"] = value
-
-        value = (self.getValueHTML("Instruments", datasetContents))
-        mapping["measurementTechnique"] = str(value)
-        EDMED_JSON["measurementTechnique"] = value
-
-        value = (self.getValueHTML("Summary", datasetContents))
-        mapping["description"] = str(value)
-        mapping["abstract"] = str(value)
-        EDMED_JSON["abstract"] = value
-
-        # mapping["language"]=[LangaugePrediction(TextualContents)]
-
-        value = (self.getValueHTML("Originators", datasetContents))
-        mapping["creator"] = str(value)
-        EDMED_JSON["creator"] = value
-
-        value = (self.getValueHTML("Data web site", datasetContents))
-        mapping["distributionInfo"] = str(value)
-        EDMED_JSON["distributionInfo"] = value
-
-        value = (self.getValueHTML("Organisation", datasetContents))
-        mapping["publisher"] = str(value)
-        EDMED_JSON["publisher"] = value
-
-        value = (self.getValueHTML("Contact", datasetContents))
-        mapping["author"] = str(value)
-        EDMED_JSON["author"] = value
-
-        value = (self.getValueHTML("Address", datasetContents))
-        mapping["contact"] = str(value)
-        EDMED_JSON["contact"] = value
-
-        value = (self.getValueHTML("Collating centre", datasetContents))
-        mapping["producer"] = str(value)
-        mapping["provider"] = str(value)
-        EDMED_JSON["provider"] = value
-
-        value = (self.getValueHTML("Local identifier", datasetContents))
-        mapping["identifier"] = str(value)
-        EDMED_JSON["identifier"] = value
-
-        value = (self.getValueHTML("Last revised", datasetContents))
-        mapping["modificationDate"] = str(value)
-        EDMED_JSON["modificationDate"] = value
-
-        domains = self.getDomain(RI)
-        value = self.topicMining(EDMED_JSON)
-        mapping["potentialTopics"] = value
-
-        essentialVariables = self.getDomainEssentialVariables(domains[0])
-        value = self.getSimilarEssentialVariables(essentialVariables, value)
-        mapping["EssentialVariables"] = value
-
-        for metadata_property in metadataStar_object:
-            cnt = cnt + 1
-            if cnt == len(metadataStar_object):
-                extrachar = "\n"
-            else:
-                extrachar = ",\n"
-
-            if metadata_property in mapping:
-                value = mapping[metadata_property]
-                if type(mapping[metadata_property]) != list:
-                    value = [value]
-
-                if (
-                        metadata_property == "description"
-                        or metadata_property == "keywords"
-                        or metadata_property == "abstract"):
-                    txtVal = (str(value).replace("[", "").replace("]", "")
-                              .replace("'", "").replace("\"", "")
-                              .replace("\"\"", "")
-                              .replace("None", ""))
-                    if txtVal != "":
-                        originalValues.append(txtVal)
-
-                elif (
-                        metadata_property == "potentialTopics"
-                        or metadata_property == "EssentialVariables"):
-                    value = self.pruneExtractedContextualInformation(
-                        value, originalValues)
-
-                indexFile.write(
-                    "\""
-                    + str(metadata_property)
-                    + "\" :"
-                    + str(value).replace("'", "\"") + extrachar
-                    )
-            else:
-                indexFile.write(
-                    "\""
-                    + str(metadata_property)
-                    + "\" :"
-                    + str([])
-                    + extrachar
-                    )
-
-        indexFile.write("}")
-        indexFile.close()
+        self.language_extraction(raw_doc, converted_doc)
+        self.post_process_doc(converted_doc)
+        self.save_index_record(converted_doc, converted_filename)
 
 
 class SeaDataNetEDMEDRepository(Repository):
     name = 'SeaDataNet EDMED'
-    research_infrastructure = 'SeaDatanet'
 
     downloader = SeaDataNetEDMEDDownloader
     converter = SeaDataNetEDMEDConverter

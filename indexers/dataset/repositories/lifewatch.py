@@ -3,20 +3,20 @@ import os
 import urllib.error
 import urllib.request
 
-from lxml.etree import fromstring
+from lxml.etree import ElementTree
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 from ... import utils
 from .common import Repository
 from ..download import TwoStepDownloader
-from ..map import Mapper, DeepSearch, flatten_list, merge_list
+from ..convert import Converter, DeepSearch, flatten_list, merge_list
 from ..index import Indexer
 
 
 class LifeWatchDownloader(TwoStepDownloader):
 
-    def record_urls(self):
+    def get_documents_urls(self):
         driver = webdriver.Chrome(ChromeDriverManager().install())
         driver.get(
             "https://metadatacatalogue.lifewatch.eu/srv/eng/catalog.search#/search?facet.q=type%2Fdataset&resultType=details&sortBy=relevance&from=301&to=400&fast=index&_content_type=json"
@@ -48,19 +48,17 @@ class LifeWatchDownloader(TwoStepDownloader):
         return urls
 
 
-class LifeWatchMapper(Mapper):
+class LifeWatchConverter(Converter):
     contextual_text_fields = [
         "dataset", "title", "abstract", "citation", "headline", "publisher"]
     contextual_text_fallback_field = "Abstract"
 
-    def gen_record_from_url(self, datasetURL):
-        try:
-            with urllib.request.urlopen(datasetURL) as f:
-                data = f.read().decode('utf-8')
-            xmlTree = fromstring(data.encode())
-        except urllib.error.HTTPError:
-            print(f'Could not open {datasetURL}, skipping')
-            return
+    def convert_record(self, raw_filename, converted_filename, metadata):
+        with open(self.paths.metadataStar_filename, "r") as f:
+            metadataStar_object = json.loads(f.read())
+
+        with open(raw_filename) as f:
+            tree = ElementTree.parse(f)
 
         with open(self.paths.metadataStar_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
@@ -80,7 +78,7 @@ class LifeWatchMapper(Mapper):
         datasetDic = {}
         elemList = []
 
-        for elem in xmlTree.iter():
+        for elem in tree.iter():
             strValue = str(elem.text).replace("\n", "").strip()
             strKey = elem.tag
 
@@ -108,30 +106,30 @@ class LifeWatchMapper(Mapper):
                     # RI= self.getRI(JSON)
                     RI = "LifeWatch"
                 if not len(domains):
-                    domains = self.getDomain(RI)
+                    domains = self.get_domain(RI)
                 if not len(topics):
-                    topics = self.topicMining(JSON)
-                result = self.getTopicsByDomainVocabulareis(topics, domains[0])
+                    topics = self.topic_mining(JSON)
+                result = self.get_topics_by_domain_vocabularies(topics, domains[0])
             elif metadata_property == "language":
                 result = "English"
             elif metadata_property == "potentialTopics":
                 if not len(topics):
-                    topics = self.topicMining(JSON)
+                    topics = self.topic_mining(JSON)
                 result = topics
-                result = self.pruneExtractedContextualInformation(
+                result = self.prune_contextual_information(
                     result, originalValues)
             elif metadata_property == "EssentialVariables":
                 if not len(RI):
-                    RI = self.getRI(JSON)
+                    RI = self.get_RI(JSON)
                 if not len(domains):
-                    domains = self.getDomain(RI)
+                    domains = self.get_domain(RI)
                 if not len(topics):
-                    topics = self.topicMining(JSON)
-                essentialVariables = self.getDomainEssentialVariables(
+                    topics = self.topic_mining(JSON)
+                essentialVariables = self.get_domain_essential_variables(
                     domains[0])
-                result = self.getSimilarEssentialVariables(
+                result = self.get_essential_variables(
                     essentialVariables, topics)
-                result = self.pruneExtractedContextualInformation(
+                result = self.prune_contextual_information(
                     result, originalValues)
             elif metadata_property == "url":
                 result = datasetURL  # [str(datasetURL)]
@@ -147,7 +145,7 @@ class LifeWatchMapper(Mapper):
                     result = searchFields
             propertyDatatype = metadataStar_object[metadata_property][0]
             # if metadata_property!="url":
-            result = self.refineResults(
+            result = self.refine_results(
                 result, propertyDatatype, metadata_property)
             # if metadata_property=="language" and (result=="" or result==[]):
             #   result= LangaugePrediction(self.extractTextualContent(JSON))
@@ -193,8 +191,7 @@ class LifeWatchMapper(Mapper):
 
 class LifeWatchRepository(Repository):
     name = 'LifeWatch'
-    research_infrastructure = 'LifeWatch'
 
     downloader = LifeWatchDownloader
-    mapper = LifeWatchMapper
+    converter = LifeWatchConverter
     indexer = Indexer

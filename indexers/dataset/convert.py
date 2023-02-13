@@ -6,28 +6,28 @@ import os
 import re
 import string
 
-from bs4 import BeautifulSoup
 import enchant
 from fuzzywuzzy import fuzz
 import gensim
 import nltk
-import requests
 import spacy
 
-from .. import utils
 from .common import Paths
 
 
 class Converter(abc.ABC):
     contextual_text_fields: list[str]
     contextual_text_fallback_field: str
+    RI: str
 
-    acceptedSimilarityThreshold = 0.75
-    CommonSubsetThreshold = 0.0
+    similarity_threshold = 0.75
+    jaccard_threshold = 0.0
 
     def __init__(self, paths: Paths):
         self.paths = paths
         self.lt = LanguageTools(paths)
+
+        self.domain = self.get_domain(self.RI)  # TODO convert to list
 
     def list_metadata(self):
         pattern = os.path.join(self.paths.meta_dir, '*.json')
@@ -47,19 +47,18 @@ class Converter(abc.ABC):
     def convert_record(self, raw_filename, converted_filename, metadata):
         pass
 
-    def getContextualText(self, JSON):
-        contextualText = DeepSearch().search(self.contextual_text_fields,
-                                             JSON)
-        if not len(contextualText):
-            contextualText = DeepSearch().search(
-                [self.contextual_text_fallback_field], JSON)
-        contextualText = list(nested_dict_value(contextualText))
-        return merge_list(contextualText)
+    def get_contextual_text(self, doc):
+        contextual_text = DeepSearch().search(self.contextual_text_fields, doc)
+        if not contextual_text:
+            contextual_text = DeepSearch().search(
+                [self.contextual_text_fallback_field], doc)
+        contextual_text = list(nested_dict_value(contextual_text))
+        return merge_list(contextual_text)
 
     @staticmethod
-    def extractTextualContent(y):
+    def extract_textual_content(y):
         out = {}
-        lstvalues = []
+        values = []
 
         def flatten(x, name=''):
             if type(x) is dict:
@@ -78,10 +77,10 @@ class Converter(abc.ABC):
                 if type(text) == str and len(text) > 1:
                     text = re.sub(r'http\S+', '', text)
                     if type(text) == str and len(text) > 1:
-                        lstvalues.append(text)
+                        values.append(text)
 
         flatten(y)
-        return lstvalues
+        return values
 
     def clean(self, doc):
         integer_free = ''.join([i for i in doc if not i.isdigit()])
@@ -98,101 +97,89 @@ class Converter(abc.ABC):
             )
         return normalized
 
-    def topicMining(self, dataset_json):
-        #########################################
-        # Turn it off:
-        #    return self.getContextualText(dataset_json)
-        ########################################
-        lsttopic = []
-        if dataset_json != "":
-            Jsontext = self.getContextualText(dataset_json)
-            if not Jsontext:
-                Jsontext = self.extractTextualContent(dataset_json)
-            doc_clean = [self.clean(doc).split() for doc in Jsontext]
-            dictionary = gensim.corpora.Dictionary(doc_clean)
-            doc_term_matrix = [dictionary.doc2bow(doc) for doc in doc_clean]
-            if len(doc_term_matrix) > 0:
-                ldamodel = gensim.models.LdaMulticore(
-                    corpus=doc_term_matrix,
-                    id2word=dictionary,
-                    num_topics=3,
-                    passes=10,
-                    )
-                topics = ldamodel.show_topics(log=True, formatted=True)
-                topTopics = sum(
-                    [re.findall('"([^"]*)"', ''.join(t[1]))
-                     for t in topics],
-                    []
-                    )
-                for topic in topTopics:
-                    if topic not in lsttopic:
-                        lsttopic.append(topic)
-        return lsttopic
+    def topic_mining(self, doc):
+        if not doc:
+            return []
 
-    def getTopicsByDomainVocabulareis(self, topics, domain):
-        Vocabs = []
+        contextual_text = self.get_contextual_text(doc)
+        if not contextual_text:
+            contextual_text = self.extract_textual_content(doc)
+
+        doc_clean = [self.clean(doc).split() for doc in contextual_text]
+        dictionary = gensim.corpora.Dictionary(doc_clean)
+        doc_term_matrix = [dictionary.doc2bow(doc) for doc in doc_clean]
+        if not doc_term_matrix:
+            return []
+
+        lda_model = gensim.models.LdaMulticore(
+            corpus=doc_term_matrix,
+            id2word=dictionary,
+            num_topics=3,
+            passes=10,
+            )
+        topics = lda_model.show_topics(log=True, formatted=True)
+        top_topics = sum([re.findall('"([^"]*)"', t[1]) for t in topics], [])
+        return list(set(top_topics))
+
+    def get_topics_by_domain_vocabularies(self, topics, domain):
+        vocabularies = set()
         with open(self.paths.domainVocbularies_filename) as f:
-            domainVocbularies_object = json.load(f)
-        for vocab in domainVocbularies_object[domain]:
+            domain_vocabularies = json.load(f)
+        for vocab in domain_vocabularies[domain]:
             for topic in topics:
                 w1 = self.lt.spacy_nlp(topic.lower())
                 w2 = self.lt.spacy_nlp(vocab.lower())
                 similarity = w1.similarity(w2)
-                if similarity > self.acceptedSimilarityThreshold:
-                    Vocabs.append(vocab) if vocab not in Vocabs else Vocabs
-        return Vocabs
+                if similarity > self.similarity_threshold:
+                    vocabularies.add(vocab)
+        return list(vocabularies)
 
-    def getSimilarEssentialVariables(self, essentialVariables, topics):
-        lstEssentialVariables = []
-        lsttopics = [*self.lt.get_words_synonyms(topics), *topics]
-        for variable in essentialVariables:
-            for topic in lsttopics:
+    def get_essential_variables(self, essential_variables, topics):
+        similar_essential_variables = set()
+        topics = [*self.lt.get_words_synonyms(topics), *topics]
+        for variable in essential_variables:
+            for topic in topics:
                 w1 = self.lt.spacy_nlp(topic.lower())
                 w2 = self.lt.spacy_nlp(variable.lower())
                 similarity = w1.similarity(w2)
-                if similarity >= self.acceptedSimilarityThreshold:
-                    if variable not in lstEssentialVariables:
-                        lstEssentialVariables.append(variable)
-        return lstEssentialVariables
+                if similarity >= self.similarity_threshold:
+                    similar_essential_variables.add(variable)
+        return list(similar_essential_variables)
 
-    def getDomainEssentialVariables(self, domain):
+    def get_domain_essential_variables(self):
         with open(self.paths.essentialVariabels_filename) as f:
-            essentialVariabels_json = json.load(f)
-        for domainVar in essentialVariabels_json:
-            if domain == domainVar:
-                return essentialVariabels_json[domain]
+            essential_variables_list = json.load(f)
+        return essential_variables_list.get(self.domain)
 
-    def getRI(self, dataset_JSON):
-        RI_content = open(self.paths.RI_filename, "r")
-        RI_json = json.loads(r'' + RI_content.read())
-        dataset_content = self.extractTextualContent(dataset_JSON)
-        for RI in RI_json:
-            for RI_keys in RI_json[RI]:
-                for ds in dataset_content:
-                    if RI_keys in ds:
-                        return RI
+    def get_RI(self, doc):
+        with open(self.paths.RI_filename, "r") as f:
+            RI_list = json.load(f)
+        textual_contents = self.extract_textual_content(doc)
+        for RI_name, RI_tokens in RI_list.items():
+            for text in textual_contents:
+                for RI_token in RI_tokens:
+                    if RI_token in text:
+                        return RI_name
 
-    def getDomain(self, RI_seed):
-        domain_content = open(self.paths.domain_filename, "r")
-        domain_json = json.loads(r'' + domain_content.read())
-        for RI in domain_json:
-            if RI == RI_seed:
-                return domain_json[RI]
+    def get_domain(self, RI):
+        with open(self.paths.domain_filename, "r") as f:
+            domain_list = json.load(f)
+        return domain_list.get(RI)[0]
 
-    def refineResults(self, TextArray, datatype, proprtyName):
-        datatype = datatype.lower()
-        refinedResults = []
-        if len(TextArray):
-            if type(TextArray) == str:
-                TextArray = [TextArray]
+    def refine_results(self, text_array, data_type, property_name):
+        data_type = data_type.lower()
+        refined_results = set()
+        if text_array:
+            if type(text_array) == str:
+                text_array = [text_array]
 
-            if type(TextArray) == dict:
-                TextArray = list(nested_dict_value(TextArray))
+            if type(text_array) == dict:
+                text_array = list(nested_dict_value(text_array))
 
-            if type(TextArray) == list:
-                TextArray = flatten_list(TextArray)
+            if type(text_array) == list:
+                text_array = flatten_list(text_array)
                 values = []
-                for text in TextArray:
+                for text in text_array:
                     if type(text) == dict:
                         text = list(nested_dict_value(text))
                         values.append(text)
@@ -201,141 +188,125 @@ class Converter(abc.ABC):
                     else:
                         values.append(text)
                 if isinstance(values, list) and len(values):
-                    TextArray = flatten_list(values)
-            if TextArray is None:
-                TextArray = ["\"" + str(TextArray) + "\""]
+                    text_array = flatten_list(values)
 
-            for text in TextArray:
+            for text in text_array:
                 doc = self.lt.spacy_nlp(str(text).strip())
 
-                if "url" in datatype and type(text) == str:
+                if "url" in data_type and type(text) == str:
                     urls = re.findall(r"(?P<url>https?://\S+)", text)
-                    if len(urls):
-                        if urls not in refinedResults:
-                            refinedResults.append(urls)
+                    for url in urls:
+                        refined_results.add(url)
 
-                if "person" in datatype:
+                if "person" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "PERSON":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "organization" in datatype:
+                if "organization" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "ORG":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "place" in datatype:
+                if "place" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and (ent.label_ == "GPE" or
                                              ent.label_ == "LOC"):
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "date" in datatype:
+                if "date" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "DATE":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "product" in datatype:
+                if "product" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "PRODUCT":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if ("integer" in datatype) or ("number" in datatype):
+                if ("integer" in data_type) or ("number" in data_type):
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "CARDINAL":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "money" in datatype:
+                if "money" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "MONEY":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "workofart" in datatype:
+                if "workofart" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and ent.label_ == "WORK_OF_ART":
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if "language" in datatype:
+                if "language" in data_type:
                     if doc.ents:
                         for ent in doc.ents:
                             if ent.text and (ent.label_ == "LANGUAGE" or
                                              ent.label_ == "GPE"):
-                                if ent.text not in refinedResults:
-                                    refinedResults.append(ent.text)
+                                refined_results.add(ent.text)
 
-                if proprtyName.lower() not in str(text).lower() and (
-                        "text" in datatype or "definedterm" in datatype):
-                    if text not in refinedResults:
-                        refinedResults.append(text)
+                if property_name.lower() not in str(text).lower() and (
+                        "text" in data_type or "definedterm" in data_type):
+                    refined_results.add(text)
 
-        return refinedResults
+        return list(refined_results)
 
-    def pruneExtractedContextualInformation(
-            self, drivedValues,
-            originalValues
-            ):
-        #########################################
-        # Turn it off:
-        # return drivedValues
-        ########################################
-        lstAcceptedValues = []
-        if len(drivedValues) and len(originalValues):
-            for subDrivedField in drivedValues:
-                for originalField in originalValues:
-                    simScore = get_jaccard_sim(
-                        subDrivedField.lower(), originalField.lower())
-                    if (
-                            simScore > self.CommonSubsetThreshold
-                            and subDrivedField not in lstAcceptedValues):
-                        lstAcceptedValues.append(subDrivedField)
-        else:
-            lstAcceptedValues = drivedValues
+    def prune_contextual_information(self, values, contextual_values):
+        if not values or not contextual_values:
+            return values
 
-        return lstAcceptedValues
+        retained_values = set()
+        for val in values:
+            for contextual_val in contextual_values:
+                sim_score = get_jaccard_sim(
+                    val.lower(),
+                    contextual_val.lower(),
+                    )
+                if sim_score > self.jaccard_threshold:
+                    retained_values.add(val)
 
-    def post_process_index_record(self, record):
-        # Extract contextual information
-        extracted_contextual_information = []
-        for k in ['description', 'abstract', 'keywords']:
-            text = (str(record[k]).replace("[", "")
-                    .replace("]", "")
-                    .replace("'", "")
-                    .replace("\"", "")
-                    .replace("\"\"", "")
-                    .replace("None", ""))
-            if text:
-                extracted_contextual_information.append(text)
-        # Prune contextual information
-        for k in ['potentialTopics', 'EssentialVariables']:
-            record[k] = self.pruneExtractedContextualInformation(
-                record[k], extracted_contextual_information)
-        for k, v in record.items():
+        return list(retained_values)
+
+    def language_extraction(self, raw_doc, doc):
+        doc['potentialTopics'] = self.topic_mining(raw_doc)
+        doc['EssentialVariables'] = self.get_essential_variables(
+            self.get_domain_essential_variables(),
+            doc['potentialTopics'])
+
+    def post_process_doc(self, doc):
+        for k, v in doc.items():
             if not isinstance(v, list):
-                record[k] = [v]
-        return record
+                doc[k] = [v]
 
-    def save_index_record(self, record, filename):
+        contextual_information = [
+            doc['description'],
+            doc['keywords'],
+            doc['abstract'],
+            ]
+        contextual_information = flatten_list(contextual_information)
+
+        for k in ['potentialTopics', 'EssentialVariables']:
+            doc[k] = self.prune_contextual_information(
+                doc[k], contextual_information)
+
+        with open(self.paths.metadataStar_filename, "r") as f:
+            schema = json.loads(f.read())
+        for k, v in doc.items():
+            doc[k] = self.refine_results(v, schema[k][0], k)
+
+    @staticmethod
+    def save_index_record(record, filename):
         with open(filename, 'w') as f:
-            json.dump(record, f)
-
-    def gen_record_from_url(self, datasetURL):
-        pass
+            json.dump(record, f, indent=2, sort_keys=True)
 
 
 class LanguageTools:
@@ -383,11 +354,6 @@ class LanguageTools:
         for word in words:
             synonyms += self.get_synonyms(word)
         return synonyms
-
-
-def get_html_tags(f, tag):
-    soup = BeautifulSoup(f, 'lxml')
-    return soup.find_all(tag)
 
 
 def nested_dict_value(d):
