@@ -54,13 +54,17 @@ class SeaDataNetCDIConverter(Converter):
             'measurementTechnique': raw_doc['How?']['Instrument/gear category'],
             'useConstraints': raw_doc['How to get data?']['Access restriction'],
             'scope': raw_doc['Other info']['Lineage'],
-            'dataQualityInfo': raw_doc['Other info']['Quality info'],
+            'dataQualityInfo': self._extract_dataQualityInfo(raw_doc),
             'ResearchInfrastructure': self.RI,
             }
 
         self.language_extraction(raw_doc, converted_doc)
         self.post_process_doc(converted_doc)
         self.save_index_record(converted_doc, converted_filename)
+
+    @staticmethod
+    def _extract_dataQualityInfo(doc):
+        return [q['Name'] for q in doc['Other info']['Quality info']]
 
 
 class SeaDataNetCDIRepository(Repository):

@@ -75,8 +75,7 @@ class ICOSConverter(Converter):
             'modificationDate': raw_doc['dateModified'],
             'name': raw_doc['name'],
             'publisher': raw_doc['publisher']['name'],
-            'spatialCoverage': raw_doc['spatialCoverage'][0][
-                'containedInPlace']['name'],
+            'spatialCoverage': self._extract_spatialCoverage(raw_doc),
             'temporalCoverage': raw_doc['temporalCoverage'],
             'abstract': '',
             }
@@ -84,6 +83,13 @@ class ICOSConverter(Converter):
         self.language_extraction(raw_doc, converted_doc)
         self.post_process_doc(converted_doc)
         self.save_index_record(converted_doc, converted_filename)
+
+    @staticmethod
+    def _extract_spatialCoverage(doc):
+        coverage = doc['spatialCoverage']
+        if isinstance(coverage, list):
+            coverage = coverage[0]
+        return coverage['containedInPlace']['name']
 
 
 class ICOSRepository(Repository):

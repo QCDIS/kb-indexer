@@ -40,7 +40,8 @@ class SeaDataNetEDMEDConverter(Converter):
 
     def convert_record(self, raw_filename, converted_filename, metadata):
         with open(raw_filename, 'rb') as f:
-            soup = BeautifulSoup(f, 'lxml')
+            d = f.read().decode('latin1')
+            soup = BeautifulSoup(d, 'lxml')
 
         raw_doc = dict()
         for tr in soup.find_all('tr'):
@@ -52,27 +53,27 @@ class SeaDataNetEDMEDConverter(Converter):
             'url': metadata['url'],
             'name': raw_doc['Data set name'],
             'ResearchInfrastructure': 'SeaDataNet',
-            'copyrightHolder': raw_doc['Data holding centre'],
-            'contributor': raw_doc['Data holding centre'],
-            'locationCreated': raw_doc['Country'],
-            'contentLocation': raw_doc['Country'],
-            "contentReferenceTime": raw_doc["Time period"],
-            "datePublished": raw_doc["Time period"],
-            "dateCreated": raw_doc["Time period"],
-            "spatialCoverage": raw_doc["Geographical area"],
-            "keywords": raw_doc["Parameters"],
-            "measurementTechnique": raw_doc["Instruments"],
-            "description": raw_doc["Summary"],
-            "abstract": raw_doc["Summary"],
-            "creator": raw_doc["Originators"],
-            "distributionInfo": raw_doc["Data holding centre"],
-            "publisher": raw_doc["Organisation"],
-            "author": raw_doc["Contact"],
-            "contact": raw_doc["Address"],
-            "producer": raw_doc["Collating centre"],
-            "provider": raw_doc["Collating centre"],
-            "identifier": raw_doc["Local identifier"],
-            "modificationDate": raw_doc["Last revised"],
+            'copyrightHolder': raw_doc.get('Data holding centre'),
+            'contributor': raw_doc.get('Data holding centre'),
+            'locationCreated': raw_doc.get('Country'),
+            'contentLocation': raw_doc.get('Country'),
+            "contentReferenceTime": raw_doc.get("Time period"),
+            "datePublished": raw_doc.get("Time period"),
+            "dateCreated": raw_doc.get("Time period"),
+            "spatialCoverage": raw_doc.get("Geographical area"),
+            "keywords": raw_doc.get("Parameters"),
+            "measurementTechnique": raw_doc.get("Instruments"),
+            "description": raw_doc.get("Summary"),
+            "abstract": raw_doc.get("Summary"),
+            "creator": raw_doc.get("Originators"),
+            "distributionInfo": raw_doc.get("Data holding centre"),
+            "publisher": raw_doc.get("Organisation"),
+            "author": raw_doc.get("Contact"),
+            "contact": raw_doc.get("Address"),
+            "producer": raw_doc.get("Collating centre"),
+            "provider": raw_doc.get("Collating centre"),
+            "identifier": raw_doc.get("Local identifier"),
+            "modificationDate": raw_doc.get("Last revised"),
             }
 
         self.language_extraction(raw_doc, converted_doc)
