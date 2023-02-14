@@ -48,7 +48,7 @@ class SeaDataNetCDIConverter(Converter):
             'genre': raw_doc['What?']['Discipline'],
             'modificationDate': raw_doc['CDI-metadata']['CDI-record last update'],
             'abstract': [raw_doc['What?']['Abstract']],
-            'spatialCoverage': raw_doc['Where?']['Sea regions'],
+            'spatialCoverage': raw_doc['Where?'].get('Sea regions'),
             'url': [metadata['url']],
             'name': raw_doc['What?']['Data set name'],
             'measurementTechnique': raw_doc['How?']['Instrument/gear category'],
