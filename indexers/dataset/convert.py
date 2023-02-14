@@ -135,16 +135,24 @@ class Converter(abc.ABC):
         return list(vocabularies)
 
     def get_essential_variables(self, essential_variables, topics):
-        similar_essential_variables = set()
         topics = [*self.lt.get_words_synonyms(topics), *topics]
-        for variable in essential_variables:
-            for topic in topics:
-                w1 = self.lt.spacy_nlp(topic.lower())
-                w2 = self.lt.spacy_nlp(variable.lower())
-                similarity = w1.similarity(w2)
+
+        essential_variables = list(set(essential_variables))
+        topics = list(set(topics))
+
+        essential_variables_docs = [self.lt.spacy_nlp(v.lower())
+                                    for v in essential_variables]
+        topics_docs = [self.lt.spacy_nlp(v.lower()) for v in topics]
+
+        similar_essential_variables = []
+        for variable in essential_variables_docs:
+            for topic in topics_docs:
+                if variable.text in similar_essential_variables:
+                    continue
+                similarity = topic.similarity(variable)
                 if similarity >= self.similarity_threshold:
-                    similar_essential_variables.add(variable)
-        return list(similar_essential_variables)
+                    similar_essential_variables.append(variable.text)
+        return similar_essential_variables
 
     def get_domain_essential_variables(self):
         with open(self.paths.essentialVariabels_filename) as f:
