@@ -34,7 +34,7 @@ class Downloader(abc.ABC):
     def download_url(url, filename):
         try:
             urllib.request.urlretrieve(url, filename)
-        except urllib.error.HTTPError:
+        except (urllib.error.HTTPError, urllib.error.URLError):
             print(f'Could not open {url}, skipping')
 
     @abc.abstractmethod
