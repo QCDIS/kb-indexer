@@ -66,8 +66,8 @@ class ICOSConverter(Converter):
             'creator': [c['name'] for c in raw_doc['creator']],
             'datePublished': raw_doc['datePublished'],
             'description': raw_doc['description'],
-            'distribution': raw_doc['distribution']['contentUrl'],
-            'distributionInfo': raw_doc['distribution']['contentUrl'],
+            'distribution': self._extract_distributionInfo(raw_doc),
+            'distributionInfo': self._extract_distributionInfo(raw_doc),
             'identifier': raw_doc['identifier'],
             'keywords': raw_doc['keywords'],
             'language': [lang['name'] for lang in raw_doc['inLanguage']],
@@ -91,6 +91,11 @@ class ICOSConverter(Converter):
             coverage = coverage[0]
         return coverage['containedInPlace']['name']
 
+    @staticmethod
+    def _extract_distributionInfo(doc):
+        distribution = doc.get('distribution')
+        if distribution:
+            return distribution.get('contentUrl')
 
 class ICOSRepository(Repository):
     name = 'ICOS'
