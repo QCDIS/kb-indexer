@@ -1,5 +1,6 @@
 import json
 
+from tqdm import tqdm
 import urllib.error
 import urllib.request
 
@@ -37,11 +38,12 @@ class SIOSDownloader(Downloader):
     def download_all(self):
         response = self._download_page(0)
         page = 1
-        print('Downloading datasets (this might take a while)')
-        while response['numberReturned']:
-            response = self._download_page(page)
-            page += 1
-        print('done')
+        with tqdm(desc='downloading records',
+                  total=response['numberMatched']) as pbar:
+            while response['numberReturned']:
+                response = self._download_page(page)
+                page += 1
+                pbar.update(response['numberReturned'])
 
 
 class SIOSConverter(Converter):
