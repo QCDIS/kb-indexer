@@ -37,11 +37,17 @@ class Converter(abc.ABC):
         for meta_file in tqdm(self.list_metadata(), desc='converting records'):
             with open(meta_file, 'r') as f:
                 meta = json.load(f)
-            self.convert_record(
-                meta['filename'],
-                self.paths.converted_file(meta['id']),
-                meta,
-                )
+            try:
+                self.convert_record(
+                    meta['filename'],
+                    self.paths.converted_file(meta['id']),
+                    meta,
+                    )
+            except Exception:
+                msg = ["Exception encountered processing dataset:"]
+                msg += [f'{k}: {v}' for k, v in meta.items()]
+                print('\n'.join(msg))
+                raise
 
     @abc.abstractmethod
     def convert_record(self, raw_filename, converted_filename, metadata):
