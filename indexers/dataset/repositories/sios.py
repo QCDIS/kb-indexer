@@ -1,5 +1,6 @@
 import json
 
+from retrying import retry
 from tqdm import tqdm
 import urllib.error
 import urllib.request
@@ -14,36 +15,35 @@ class SIOSDownloader(Downloader):
     documents_list_url = 'https://sios.csw.met.no/collections/metadata:main/items'
     document_extension = '.json'
 
-    def _download_page(self, i):
-        results_per_page = 10  # from API doc
-        start_index = i * results_per_page
-        url = f'{self.documents_list_url}?f=json&startindex={start_index}'
-        try:
-            with urllib.request.urlopen(url) as r:
-                response = json.load(r)
-        except (urllib.error.HTTPError, urllib.error.URLError):
-            print(f'Could not open {url}, skipping')
-            response = {
-                'numberReturned': 0,
-                'features': [],
-                }
+    @retry(retry_on_exception=lambda e: isinstance(e, (urllib.error.HTTPError,
+                                                       urllib.error.URLError)),
+           wrap_exception=True,
+           stop_max_attempt_number=4,
+           wait_fixed=5000,
+           )
+    def _download_page(self, offset):
+        url = f'{self.documents_list_url}?f=json&startindex={offset}'
+        with urllib.request.urlopen(url) as r:
+            response = json.load(r)
+
         for feature in response['features']:
-            url = f"{self.documents_list_url}/{feature['id']}?f=json"
+            url = f"{self.documents_list_url}/{feature['id']}"
             meta = self.gen_metadata(url)
             self.save_metadata(meta)
-            self.download_url(meta['url'], meta['filename'])
+            with open(meta['filename'], 'w') as f:
+                json.dump(feature, f)
 
         return response
 
     def download_all(self):
         response = self._download_page(0)
-        page = 1
+        offset = response['numberReturned']
         with tqdm(desc='downloading records',
                   total=response['numberMatched']) as pbar:
             while response['numberReturned']:
-                response = self._download_page(page)
-                page += 1
                 pbar.update(response['numberReturned'])
+                response = self._download_page(offset)
+                offset += response['numberReturned']
 
 
 class SIOSConverter(Converter):
