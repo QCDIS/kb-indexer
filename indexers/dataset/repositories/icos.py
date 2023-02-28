@@ -55,7 +55,7 @@ class ICOSConverter(Converter):
             'acquireLicensePage': raw_doc['acquireLicensePage'],
             'contact': raw_doc['name'],
             'contentInfo': raw_doc['name'],
-            'creator': [c['name'] for c in raw_doc['creator']],
+            'creator': self._extract_creator(raw_doc),
             'datePublished': raw_doc['datePublished'],
             'description': raw_doc['description'],
             'distribution': self._extract_distributionInfo(raw_doc),
@@ -88,6 +88,14 @@ class ICOSConverter(Converter):
         distribution = doc.get('distribution')
         if distribution:
             return distribution.get('contentUrl')
+
+    @staticmethod
+    def _extract_creator(doc):
+        if isinstance(doc['creator'], dict):
+            return [doc['creator']['name']]
+        else:
+            return [c['name'] for c in doc['creator']]
+
 
 class ICOSRepository(Repository):
     name = 'ICOS'
