@@ -81,7 +81,8 @@ class ICOSConverter(Converter):
         coverage = doc['spatialCoverage']
         if isinstance(coverage, list):
             coverage = coverage[0]
-        return coverage['containedInPlace']['name']
+        coverage = coverage.get('containedInPlace', coverage)
+        return coverage.get('name')
 
     @staticmethod
     def _extract_distributionInfo(doc):
