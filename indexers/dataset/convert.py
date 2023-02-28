@@ -295,10 +295,10 @@ class Converter(abc.ABC):
         return list(retained_values)
 
     def language_extraction(self, raw_doc, doc):
-        doc['potentialTopics'] = self.topic_mining(raw_doc)
-        doc['EssentialVariables'] = self.get_essential_variables(
+        doc['potential_topics'] = self.topic_mining(raw_doc)
+        doc['essential_variables'] = self.get_essential_variables(
             self.get_domain_essential_variables(),
-            doc['potentialTopics'])
+            doc['potential_topics'])
 
     def post_process_doc(self, doc):
         for k, v in doc.items():
@@ -308,11 +308,10 @@ class Converter(abc.ABC):
         contextual_information = [
             doc['description'],
             doc['keywords'],
-            doc['abstract'],
             ]
         contextual_information = flatten_list(contextual_information)
 
-        for k in ['potentialTopics', 'EssentialVariables']:
+        for k in ['potential_topics', 'essential_variables']:
             doc[k] = self.prune_contextual_information(
                 doc[k], contextual_information)
 

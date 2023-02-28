@@ -112,13 +112,13 @@ class LifeWatchConverter(Converter):
                 result = self.get_topics_by_domain_vocabularies(topics, domains[0])
             elif metadata_property == "language":
                 result = "English"
-            elif metadata_property == "potentialTopics":
+            elif metadata_property == "potential_topics":
                 if not len(topics):
                     topics = self.topic_mining(JSON)
                 result = topics
                 result = self.prune_contextual_information(
                     result, originalValues)
-            elif metadata_property == "EssentialVariables":
+            elif metadata_property == "essential_variables":
                 if not len(RI):
                     RI = self.get_RI(JSON)
                 if not len(domains):
