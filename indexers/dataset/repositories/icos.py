@@ -81,7 +81,8 @@ class ICOSConverter(Converter):
         coverage = doc['spatialCoverage']
         if isinstance(coverage, list):
             coverage = coverage[0]
-        coverage = coverage.get('containedInPlace', coverage)
+        if coverage.get('containedInPlace'):
+            coverage = coverage.get('containedInPlace')
         return coverage.get('name')
 
     @staticmethod
