@@ -19,10 +19,10 @@ class Pipeline(abc.ABC):
         self.converter = self.repo.converter(paths)
         self.indexer = self.repo.indexer(paths)
 
-    def run(self, reindex=False):
+    def run(self, reindex=False, keep_files=False):
         self.downloader.download_all(reindex=reindex)
-        self.converter.convert_all()
-        self.indexer.ingest_all()
+        self.converter.convert_all(keep_files=keep_files)
+        self.indexer.ingest_all(keep_files=keep_files)
 
 
 def main():

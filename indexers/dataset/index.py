@@ -21,7 +21,7 @@ class Indexer:
         for filename in self.list_files():
             os.remove(filename)
 
-    def ingest_all(self):
+    def ingest_all(self, keep_files=False):
         for doc_filename in tqdm(self.list_files(), desc='ingesting records'):
             try:
                 with open(doc_filename, 'r') as f:
@@ -31,6 +31,8 @@ class Indexer:
                 continue
             id_ = utils.gen_id_from_url(doc['url'])
             self.indexer.ingest_record(id_, doc)
+            if not keep_files:
+                os.remove(doc_filename)
 
     def url_is_indexed(self, url):
         return self.indexer.is_in_index('url', url)

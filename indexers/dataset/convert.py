@@ -33,7 +33,7 @@ class Converter(abc.ABC):
         pattern = os.path.join(self.paths.meta_dir, '*.json')
         return sorted(glob(pattern))
 
-    def convert_all(self):
+    def convert_all(self, keep_files=False):
         for meta_file in tqdm(self.list_metadata(), desc='converting records'):
             with open(meta_file, 'r') as f:
                 meta = json.load(f)
@@ -48,6 +48,9 @@ class Converter(abc.ABC):
                 msg += [f'{k}: {v}' for k, v in meta.items()]
                 print('\n'.join(msg))
                 raise
+            if not keep_files:
+                os.remove(meta['filename'])
+                os.remove(meta_file)
 
     @abc.abstractmethod
     def convert_record(self, raw_filename, converted_filename, metadata):
