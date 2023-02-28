@@ -71,33 +71,30 @@ class SIOSConverter(Converter):
         spatial_extent = str(raw_doc['properties']['extents']['spatial'])
 
         converted_doc = {
-            'url': metadata['url'],
-            'ResearchInfrastructure': self.RI,
-            'name': raw_doc['properties']['title'],
-            'copyrightHolder': creator,
+            'contact': 'adc-support@met.no',
             'contributor': creator,
             'creator': creator,
-            'publisher': creator,
-            'author': creator,
-            'producer': creator,
-            'provider': creator,
-            'contact': 'adc-support@met.no',
-            'spatialCoverage': spatial_extent,
-            'modificationDate': raw_doc['properties']['recordUpdated'],
-            'keywords': raw_doc['properties']['keywords'],
             'description': raw_doc['properties']['description'],
-            'abstract': raw_doc['properties']['description'],
+            'discipline': None,
+            'identifier': None,
+            'instrument': None,
+            'modification_date': raw_doc['properties']['recordUpdated'],
+            'keywords': raw_doc['properties']['keywords'],
+            'language': None,
+            'publication_year': None,
+            'publisher': creator,
+            'related_identifier': None,
+            'repo': self.RI,
+            'rights': None,
+            'size': None,
+            'source': metadata['url'],
+            'spatial_coverage': spatial_extent,
+            'temporal_coverage': None,
+            'title': raw_doc['properties']['title'],
+            'version': None,
+            'essential_variables': None,
+            'potential_topics': None,
             }
-
-        if 'associations' in raw_doc:
-            for link in raw_doc['associations']:
-                if link['type'] == 'WWW:DOWNLOAD-1.0-http--download':
-                    converted_doc['distributionInfo'] = link['href']
-                    break
-            if ('distributionInfo' not in converted_doc
-                    and raw_doc['associations']):
-                fallback_link = raw_doc['associations'][0]['href']
-                converted_doc['distributionInfo'] = fallback_link
 
         self.language_extraction(raw_doc, converted_doc)
         self.post_process_doc(converted_doc)

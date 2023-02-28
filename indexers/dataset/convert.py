@@ -319,7 +319,7 @@ class Converter(abc.ABC):
         with open(self.paths.metadata_schema_filename, "r") as f:
             schema = json.loads(f.read())
         for k, v in doc.items():
-            doc[k] = self.refine_results(v, schema[k][0], k)
+            doc[k] = self.refine_results(v, schema[k]['datatype'], k)
 
     @staticmethod
     def save_index_record(record, filename):
