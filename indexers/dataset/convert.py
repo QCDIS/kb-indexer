@@ -132,7 +132,7 @@ class Converter(abc.ABC):
 
     def get_topics_by_domain_vocabularies(self, topics, domain):
         vocabularies = set()
-        with open(self.paths.domainVocbularies_filename) as f:
+        with open(self.paths.domain_vocabularies_filename) as f:
             domain_vocabularies = json.load(f)
         for vocab in domain_vocabularies[domain]:
             for topic in topics:
@@ -164,22 +164,23 @@ class Converter(abc.ABC):
         return similar_essential_variables
 
     def get_domain_essential_variables(self):
-        with open(self.paths.essentialVariabels_filename) as f:
+        with open(self.paths.domain_essential_variables_filename) as f:
             essential_variables_list = json.load(f)
         return essential_variables_list.get(self.domain)
 
     def get_RI(self, doc):
-        with open(self.paths.RI_filename, "r") as f:
-            RI_list = json.load(f)
+        with open(self.paths.RI_synonyms_filename, "r") as f:
+            RI_synonyms_list = json.load(f)
         textual_contents = self.extract_textual_content(doc)
-        for RI_name, RI_tokens in RI_list.items():
+        for RI_name, RI_synonyms in RI_synonyms_list.items():
             for text in textual_contents:
-                for RI_token in RI_tokens:
-                    if RI_token in text:
+                for synonym in RI_synonyms:
+                    if synonym in text:
                         return RI_name
 
+    # FIXME: should return a list
     def get_domain(self, RI):
-        with open(self.paths.domain_filename, "r") as f:
+        with open(self.paths.RI_domains_filename, "r") as f:
             domain_list = json.load(f)
         return domain_list.get(RI)[0]
 
@@ -315,7 +316,7 @@ class Converter(abc.ABC):
             doc[k] = self.prune_contextual_information(
                 doc[k], contextual_information)
 
-        with open(self.paths.metadataStar_filename, "r") as f:
+        with open(self.paths.metadata_schema_filename, "r") as f:
             schema = json.loads(f.read())
         for k, v in doc.items():
             doc[k] = self.refine_results(v, schema[k][0], k)

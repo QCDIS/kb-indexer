@@ -21,16 +21,16 @@ class Paths:
 
         # metadata
         metadata_dir = os.path.join(os.path.dirname(__file__), 'data_sources')
-        self.metadataStar_filename = os.path.join(
-            metadata_dir, 'metadata*.json')
-        self.RI_filename = os.path.join(
-            metadata_dir, 'RIs.json')
-        self.domain_filename = os.path.join(
-            metadata_dir, 'domain.json')
-        self.essentialVariabels_filename = os.path.join(
-            metadata_dir, 'essential_variables.json')
-        self.domainVocbularies_filename = os.path.join(
-            metadata_dir, 'Vocabularies.json')
+        self.metadata_schema_filename = os.path.join(
+            metadata_dir, 'metadata_schema.json')
+        self.RI_synonyms_filename = os.path.join(
+            metadata_dir, 'RI_synonyms.json')
+        self.RI_domains_filename = os.path.join(
+            metadata_dir, 'RI_domains.json')
+        self.domain_essential_variables_filename = os.path.join(
+            metadata_dir, 'domain_essential_variables.json')
+        self.domain_vocabularies_filename = os.path.join(
+            metadata_dir, 'domain_vocabularies.json')
 
     @staticmethod
     def _add_dir(*path):

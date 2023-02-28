@@ -54,13 +54,13 @@ class LifeWatchConverter(Converter):
     contextual_text_fallback_field = "Abstract"
 
     def convert_record(self, raw_filename, converted_filename, metadata):
-        with open(self.paths.metadataStar_filename, "r") as f:
+        with open(self.paths.metadata_schema_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
         with open(raw_filename) as f:
             tree = ElementTree.parse(f)
 
-        with open(self.paths.metadataStar_filename, "r") as f:
+        with open(self.paths.metadata_schema_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
         indexfname = os.path.join(
