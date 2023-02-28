@@ -21,28 +21,29 @@ class SIOSDownloader(Downloader):
            stop_max_attempt_number=4,
            wait_fixed=5000,
            )
-    def _download_page(self, offset):
+    def _download_page(self, offset, reindex=False):
         url = f'{self.documents_list_url}?f=json&startindex={offset}'
         with urllib.request.urlopen(url) as r:
             response = json.load(r)
 
         for feature in response['features']:
             url = f"{self.documents_list_url}/{feature['id']}"
-            meta = self.gen_metadata(url)
-            self.save_metadata(meta)
-            with open(meta['filename'], 'w') as f:
-                json.dump(feature, f)
+            if reindex or not self.indexer.url_is_indexed(url):
+                meta = self.gen_metadata(url)
+                self.save_metadata(meta)
+                with open(meta['filename'], 'w') as f:
+                    json.dump(feature, f)
 
         return response
 
-    def download_all(self):
-        response = self._download_page(0)
+    def download_all(self, reindex=False):
+        response = self._download_page(0, reindex=reindex)
         offset = response['numberReturned']
         with tqdm(desc='downloading records',
                   total=response['numberMatched']) as pbar:
             while response['numberReturned']:
                 pbar.update(response['numberReturned'])
-                response = self._download_page(offset)
+                response = self._download_page(offset, reindex=reindex)
                 offset += response['numberReturned']
 
 

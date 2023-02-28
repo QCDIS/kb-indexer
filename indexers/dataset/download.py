@@ -7,6 +7,7 @@ import urllib.request
 import urllib.error
 
 from .common import Paths
+from .index import Indexer
 
 
 class Downloader(abc.ABC):
@@ -15,6 +16,7 @@ class Downloader(abc.ABC):
 
     def __init__(self, paths: Paths):
         self.paths = paths
+        self.indexer = Indexer(paths)
 
     def gen_metadata(self, url):
         id_ = self.paths.url_to_id(url)
@@ -38,7 +40,7 @@ class Downloader(abc.ABC):
             print(f'Could not open {url}, skipping')
 
     @abc.abstractmethod
-    def download_all(self):
+    def download_all(self, reindex=False):
         pass
 
 
@@ -50,8 +52,9 @@ class TwoStepDownloader(Downloader, abc.ABC):
     def get_documents_urls(self):
         pass
 
-    def download_all(self):
+    def download_all(self, reindex=False):
         for url in tqdm(self.get_documents_urls(), desc='downloading records'):
-            meta = self.gen_metadata(url)
-            self.save_metadata(meta)
-            self.download_url(meta['url'], meta['filename'])
+            if reindex or not self.indexer.url_is_indexed(url):
+                meta = self.gen_metadata(url)
+                self.save_metadata(meta)
+                self.download_url(meta['url'], meta['filename'])
