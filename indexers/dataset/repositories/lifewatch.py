@@ -54,13 +54,13 @@ class LifeWatchConverter(Converter):
     contextual_text_fallback_field = "Abstract"
 
     def convert_record(self, raw_filename, converted_filename, metadata):
-        with open(self.paths.metadataStar_filename, "r") as f:
+        with open(self.paths.metadata_schema_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
         with open(raw_filename) as f:
             tree = ElementTree.parse(f)
 
-        with open(self.paths.metadataStar_filename, "r") as f:
+        with open(self.paths.metadata_schema_filename, "r") as f:
             metadataStar_object = json.loads(f.read())
 
         indexfname = os.path.join(
@@ -112,13 +112,13 @@ class LifeWatchConverter(Converter):
                 result = self.get_topics_by_domain_vocabularies(topics, domains[0])
             elif metadata_property == "language":
                 result = "English"
-            elif metadata_property == "potentialTopics":
+            elif metadata_property == "potential_topics":
                 if not len(topics):
                     topics = self.topic_mining(JSON)
                 result = topics
                 result = self.prune_contextual_information(
                     result, originalValues)
-            elif metadata_property == "EssentialVariables":
+            elif metadata_property == "essential_variables":
                 if not len(RI):
                     RI = self.get_RI(JSON)
                 if not len(domains):

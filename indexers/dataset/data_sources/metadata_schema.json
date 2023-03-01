@@ -1,0 +1,140 @@
+{
+  "contact": {
+    "description": "identification of, and means of communicating with, person(s) and organisation(s) with responsibility for maintaining the resource",
+    "datatype": "Organization/Person",
+    "constraint": "len(5)",
+    "suggested sources": ["contact", "Point of contact", "gmd:CI_ResponsibleParty", "gco:CharacterString", "responsibleOrganization", "name", "uri", "website"]
+  },
+  "contributor": {
+    "description": "A secondary contributor to the dataset or Event.",
+    "datatype": "Organization/Person",
+    "constraint": "Rule",
+    "suggested sources": ["gmd:organisationName", "gco:CharacterString"]
+  },
+  "creator": {
+    "description": "The entity responsible for producing the resource.",
+    "datatype": "Organization/Person",
+    "constraint": "len(5)",
+    "suggested sources": ["creator", "name", "label", "uri", "recordedBy"]
+  },
+  "description": {
+    "description": "A brief description of a set of distribution options.",
+    "datatype": "Text",
+    "constraint": "len(15)",
+    "suggested sources": ["Discovery parameter", "comments"]
+  },
+  "discipline": {
+    "description": "The research discipline(s) the resource can be categorized in.",
+    "datatype": "Text",
+    "constraint": "len(5)",
+    "suggested sources": ["Discipline", "gmd:topicCategory", "gmd:MD_TopicCategoryCode", "dwc:class", "classification", "name", "url"]
+  },
+  "essential_variables": {
+    "description": "EssentialVariables used to list relevant essential variables. Multiple entries in an essential variables list are typically delimited by commas.",
+    "datatype": "DefinedTerm",
+    "constraint": "array(comma)",
+    "suggested sources": ["--LanguageModelExtraction--"]
+  },
+  "identifier": {
+    "description": "unique identifier for this metadata record",
+    "datatype": "PropertyValue/Text",
+    "constraint": "len(15)",
+    "suggested sources": ["ISBN", "GTIN", "UUID", "URI", "URL", "id", "metadataIdentifier", "gmd:fileIdentifier", "gco:CharacterString", "pid"]
+  },
+  "instrument": {
+    "description": "A technique or technology used in a Dataset (or DataDownload, DataCatalog), corresponding to the method used for measuring the corresponding variable(s) (described using variableMeasured).",
+    "datatype": "Text/URL",
+    "constraint": "Rule",
+    "suggested sources": ["Instrument/gear type", "instrument", "label", "uri"]
+  },
+  "modification_date": {
+    "description": "Most recent date on which the item was changed, updated or modified.",
+    "datatype": "DateTime",
+    "constraint": "len(4)",
+    "suggested sources": ["CDI-record last update", "dateModified", "dcterms:modified"]
+  },
+  "keywords": {
+    "description": "Keywords or tags used to describe this content. Multiple entries in a keywords list are typically delimited by commas.",
+    "datatype": "Text/URL",
+    "constraint": "array(comma)",
+    "suggested sources": ["Parameter groups", "gmd:keyword", "gco:CharacterString", "keywords", "label", "synonyms", "name", "rank", "genus", "species"]
+  },
+  "language": {
+    "description": "The language of the content or performance or used in an action. Please use one of the language codes from the IETF BCP 47 standard. See also availableLanguage. Supersedes language.",
+    "datatype": "Language/Text",
+    "constraint": "len(2)",
+    "suggested sources": ["inLanguage", "countryCode", "lang", "gmd:LanguageCode", "gmd:language", "@codeListValue"]
+  },
+  "potential_topics": {
+    "description": "The potential topics of the dataset",
+    "datatype": "DefinedTerm",
+    "constraint": "Rule",
+    "suggested sources": ["--LanguageModelExtraction--"]
+  },
+  "publication_year": {
+    "description": "Date of first broadcast/publication.",
+    "datatype": "Date/DateTime",
+    "constraint": "Rule",
+    "suggested sources": ["gmd:dateStamp", "gco:DateTime", "dateTime", "gbif:lastParsed"]
+  },
+  "publisher": {
+    "description": "The publisher of the dataset.",
+    "datatype": "Organization/Person",
+    "constraint": "len(2)",
+    "suggested sources": ["Data originator", "distributor", "gmd:organisationName", "gco:CharacterString", "station", "org", "name", "label", "submitter", "name"]
+  },
+  "related_identifier": {
+    "description": "A resource with an unspecified relationship to the cataloged item.",
+    "datatype": "Text",
+    "constraint": "Rule",
+    "suggested sources": ["sample"]
+  },
+  "repo": {
+    "description": "The name of the research infrastructure",
+    "datatype": "DefinedTerm",
+    "constraint": "Rule",
+    "suggested sources": ["--LanguageModelExtraction--"]
+  },
+  "rights": {
+    "description": "A statement that concerns all rights not addressed with dcterms,license or dcterms,accessRights, such as copyright statements.",
+    "datatype": "Text/URL",
+    "constraint": "Rule",
+    "suggested sources": ["accessRights", "accessUrl"]
+  },
+  "size": {
+    "description": "A standardized size of a product or creative work, specified either through a simple textual string (for example 'XL', '32Wx34L'), a QuantitativeValue with a unitCode, or a comprehensive and structured SizeSpecification; in other cases, the width, height, depth and weight properties may be more applicable.",
+    "datatype": "DefinedTerm/QuantitativeValue/SizeSpecification/Text",
+    "constraint": "Rule",
+    "suggested sources": ["size"]
+  },
+  "source": {
+    "description": "URL of the item.",
+    "datatype": "URL",
+    "constraint": "Rule",
+    "suggested sources": ["gmd:identifier", "gco:CharacterString", "accessUrl", "physicalSpecimenId"]
+  },
+  "spatial_coverage": {
+    "description": "The spatialCoverage of a dataset indicates the place(s) which are the focus of the content. It is a subproperty of contentLocation intended primarily for more technical and detailed materials. For example with a Dataset, it indicates areas that the dataset describes, a dataset of New York weather would have spatialCoverage which was the place, the state of New York.",
+    "datatype": "Place",
+    "constraint": "lng/lat",
+    "suggested sources": ["gmd:geographicElement", "gco:Decimal", "coverageGeo", "coverage", "coordinates", "Sea regions"]
+  },
+  "temporal_coverage": {
+    "description": "The temporal period that the dataset covers.",
+    "datatype": "DateTime/Text",
+    "constraint": "len(4)",
+    "suggested sources": ["gmd:temporalElement", "temporalCoverageDisplay"]
+  },
+  "title": {
+    "description": "The name of the item.",
+    "datatype": "Text",
+    "constraint": "Rule",
+    "suggested sources": ["fileName", "Data set name", "gmd:fileIdentifier", "gco:CharacterString", "scientificName", "gbif:acceptedScientificName", "dwc:datasetName", "gbif:genericName"]
+  },
+  "version": {
+    "description": "The version of the dataset embodied by a specified resource.",
+    "datatype": "Number/Text",
+    "constraint": "len(1)",
+    "suggested sources": ["gmd:metadataStandardVersion", "gco:CharacterString", "bibliographic_citation"]
+  }
+}

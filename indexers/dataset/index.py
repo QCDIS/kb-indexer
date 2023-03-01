@@ -29,10 +29,10 @@ class Indexer:
             except json.decoder.JSONDecodeError:
                 print('skipping', doc_filename)
                 continue
-            id_ = utils.gen_id_from_url(doc['url'])
+            id_ = utils.gen_id_from_url(doc['source'])
             self.indexer.ingest_record(id_, doc)
             if not keep_files:
                 os.remove(doc_filename)
 
     def url_is_indexed(self, url):
-        return self.indexer.is_in_index('url', url)
+        return self.indexer.is_in_index('source', url)
