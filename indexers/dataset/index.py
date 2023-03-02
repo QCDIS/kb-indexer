@@ -11,7 +11,7 @@ from .common import Paths
 class Indexer:
     def __init__(self, paths: Paths):
         self.paths = paths
-        self.indexer = utils.ElasticsearchIndexer('envri')
+        self.indexer = utils.ElasticsearchIndexer('dataset')
 
     def list_files(self):
         pattern = self.paths.converted_file('*')
