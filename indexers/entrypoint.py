@@ -3,6 +3,7 @@
 import click
 
 from .api.entrypoint import api
+from .dataset.entrypoint import dataset
 from .web.entrypoint import web
 
 
@@ -14,6 +15,7 @@ def cli():
 
 
 cli.add_command(api)
+cli.add_command(dataset)
 cli.add_command(web)
 
 
