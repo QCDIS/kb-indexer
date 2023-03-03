@@ -3,6 +3,7 @@
 import click
 
 from .api.entrypoint import api
+from .web.entrypoint import web
 
 
 @click.group(
@@ -13,6 +14,7 @@ def cli():
 
 
 cli.add_command(api)
+cli.add_command(web)
 
 
 if __name__ == '__main__':
