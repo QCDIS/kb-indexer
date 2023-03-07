@@ -321,13 +321,3 @@ class RawNotebookPreprocessor:
         df_features = pd.DataFrame.from_dict(features)
         df_features['docid'] = df_notebooks['docid']
         return df_features
-
-
-def main():
-    preprocessor = RawNotebookPreprocessor('Kaggle')
-    preprocessor.dump_raw_notebooks()
-    preprocessor.add_new_features()
-
-
-if __name__ == '__main__': 
-    main()
