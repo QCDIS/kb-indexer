@@ -5,7 +5,7 @@ import kaggle
 import json
 
 
-class _NotebookDownloader:
+class NotebookDownloader(abc.ABC):
 
     source_name: str
 
@@ -40,7 +40,7 @@ class _NotebookDownloader:
             self.download(metadata, output_file)
 
 
-class KaggleNotebookDownloader(_NotebookDownloader):
+class KaggleNotebookDownloader(NotebookDownloader):
 
     source_name = 'Kaggle'
 
@@ -102,22 +102,9 @@ class KaggleNotebookDownloader(_NotebookDownloader):
         return True
 
 
-class GithubNotebookDownloader(_NotebookDownloader):
+class GithubNotebookDownloader(NotebookDownloader):
 
-    source_name = 'Github'
+    source_name = 'GitHub'
 
     def download(self, metadata, output_file):
         raise NotImplementedError
-
-
-def main():
-
-    s = KaggleNotebookDownloader()
-    s.bulk_download()
-
-    s = GithubNotebookDownloader()
-    s.bulk_download()
-
-
-if __name__ == '__main__':
-    main()

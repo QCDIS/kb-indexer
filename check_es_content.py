@@ -9,7 +9,7 @@ def list_indices(es):
     indices = es.indices.get_alias(index='*')
     if not indices:
         print('No indices found')
-    for index_name in indices:
+    for index_name in sorted(indices):
         try:
             es.indices.open(index=index_name)
             print(

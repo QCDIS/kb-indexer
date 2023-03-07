@@ -1,37 +1,30 @@
 import abc
 
-from tqdm import tqdm
-
 from .common import Paths
-from .repositories.icos import ICOSRepository
-from .repositories.lifewatch import LifeWatchRepository
-from .repositories.seadatanet_cdi import SeaDataNetCDIRepository
-from .repositories.seadatanet_edmed import SeaDataNetEDMEDRepository
-from .repositories.sios import SIOSRepository
 
 
 class Pipeline(abc.ABC):
 
-    def __init__(self, repo):
+    def __init__(self, repo, reindex=False, keep_files=False):
         self.repo = repo
-        paths = Paths(self.repo.name)
-        self.downloader = self.repo.downloader(paths)
-        self.converter = self.repo.converter(paths)
-        self.indexer = self.repo.indexer(paths)
+        self.reindex = reindex
+        self.keep_files = keep_files
 
-    def run(self, reindex=False, keep_files=False):
-        self.downloader.download_all(reindex=reindex)
-        self.converter.convert_all(keep_files=keep_files)
-        self.indexer.ingest_all(keep_files=keep_files)
+        self.paths = Paths(self.repo.name)
 
+    def download(self):
+        print(f'Download records from {self.repo.name}')
+        self.repo.downloader(self.paths).download_all(reindex=self.reindex)
 
-def main():
-    Pipeline(SeaDataNetCDIRepository).run()
-    Pipeline(SeaDataNetEDMEDRepository).run()
-    Pipeline(ICOSRepository).run()
-    # Pipeline(LifeWatchRepository).run()
-    Pipeline(SIOSRepository).run()
+    def convert(self):
+        print(f'Converting records from {self.repo.name}')
+        self.repo.converter(self.paths).convert_all(keep_files=self.keep_files)
 
+    def index(self):
+        print(f'Ingesting records {self.repo.name}')
+        self.repo.indexer(self.paths).ingest_all(keep_files=self.keep_files)
 
-if __name__ == '__main__':
-    main()
+    def run(self):
+        self.download()
+        self.convert()
+        self.index()

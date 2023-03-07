@@ -40,7 +40,3 @@ def indexing_pipeline():
                 ).hexdigest()
 
             indexer.ingest_record(id_, index_record)
-
-
-if __name__ == '__main__':
-    indexing_pipeline()

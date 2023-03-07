@@ -12,7 +12,7 @@ from tqdm import tqdm
 from urllib.parse import quote
 
 
-class _NotebookSearcher:
+class NotebookSearcher(abc.ABC):
 
     source_name: str
 
@@ -51,7 +51,7 @@ class _NotebookSearcher:
                     print(f'file exists: {output_file}')
 
 
-class KaggleNotebookSearcher(_NotebookSearcher):
+class KaggleNotebookSearcher(NotebookSearcher):
 
     source_name = 'Kaggle'
 
@@ -92,9 +92,9 @@ class KaggleNotebookSearcher(_NotebookSearcher):
         return results
 
 
-class GithubNotebookSearcher(_NotebookSearcher):
+class GithubNotebookSearcher(NotebookSearcher):
 
-    source_name = 'Github'
+    source_name = 'GitHub'
 
     def __init__(self):
         super().__init__()
@@ -149,24 +149,3 @@ class GithubNotebookSearcher(_NotebookSearcher):
                 if new_record not in data:
                     data.append(new_record)
         return data
-
-
-def main():
-    # Read queries
-    df_queries = pd.read_csv(
-        os.path.join(
-            os.path.dirname(__file__),
-            'data_sources/envri_queries.csv'
-            )
-        )
-    queries = df_queries['queries'].values
-
-    s = KaggleNotebookSearcher()
-    s.bulk_search(queries, page_range=10)
-
-    s = GithubNotebookSearcher()
-    s.bulk_search(queries, page_range=10)
-
-
-if __name__ == '__main__':
-    main()

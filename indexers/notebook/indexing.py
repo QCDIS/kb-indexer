@@ -22,25 +22,3 @@ class JsonIndexer(utils.ElasticsearchIndexer):
             with open(record_file, 'r') as f:
                 record = json.load(f)
             self.ingest_record(record['id'], record)
-
-
-def main():
-    sources = [
-        'Kaggle',
-        'Github',
-        ]
-
-    for source in sources:
-        print(f'Ingesting notebooks from {source}')
-        data_dir = os.path.join(
-            os.path.dirname(__file__),
-            f'data/{source}/repositories_metadata/')
-        indexer = JsonIndexer(
-            'notebooks',
-            data_dir,
-            )
-        indexer.bulk_ingest()
-
-
-if __name__ == '__main__':
-    main()
