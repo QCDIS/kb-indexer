@@ -94,7 +94,7 @@ class KaggleNotebookSearcher(NotebookSearcher):
 
 class GithubNotebookSearcher(NotebookSearcher):
 
-    source_name = 'Github'
+    source_name = 'GitHub'
 
     def __init__(self):
         super().__init__()

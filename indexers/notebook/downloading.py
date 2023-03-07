@@ -104,7 +104,7 @@ class KaggleNotebookDownloader(NotebookDownloader):
 
 class GithubNotebookDownloader(NotebookDownloader):
 
-    source_name = 'Github'
+    source_name = 'GitHub'
 
     def download(self, metadata, output_file):
         raise NotImplementedError

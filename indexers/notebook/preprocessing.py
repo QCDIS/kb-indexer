@@ -282,7 +282,7 @@ class RawNotebookPreprocessor:
     def get_html_url(self, source_id):
         if self.source_name =='Kaggle':
             return ("https://www.kaggle.com/code/" + source_id)
-        elif self.source_name =='Github':
+        elif self.source_name =='GitHub':
             return ' '  # TODO
         else:
             raise ValueError
