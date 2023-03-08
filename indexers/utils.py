@@ -4,7 +4,6 @@ import json
 import time
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Index
-import dotenv
 
 
 # Ignore warnings
