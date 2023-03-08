@@ -11,6 +11,20 @@ python -m spacy download en_core_web_md
 ```
 
 
+## Configuration
+
+The following environment variables should be defined:
+
+```
+ELASTICSEARCH_HOST
+ELASTICSEARCH_USERNAME
+ELASTICSEARCH_PASSWORD
+KAGGLE_USERNAME
+KAGGLE_KEY
+GITHUB_API_TOKEN
+```
+
+
 ## Usage
 
 Several indexers (API, dataset, web, etc.) are available as subcommands of 

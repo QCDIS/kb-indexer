@@ -20,10 +20,6 @@ def read_json_file(file):
     return data
 
 
-def load_dotenv():
-    dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-
-
 def gen_id_from_url(url, max_length=140):
     if type(url) in (list, tuple):
         if len(url) != 1:
