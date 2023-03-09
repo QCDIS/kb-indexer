@@ -1,4 +1,5 @@
 import json
+import re
 
 from retrying import retry
 from tqdm import tqdm
@@ -56,12 +57,59 @@ class DiSSCoDownloader(Downloader):
 
 
 class DiSSCoConverter(Converter):
-    contextual_text_fields = ['']
-    contextual_text_fallback_field = ''
+    contextual_text_fields = ['']  # FIXME
+    contextual_text_fallback_field = ''  # FIXME
     RI = 'DiSSCo'
 
     def convert_record(self, raw_filename, converted_filename, metadata):
-        raise NotImplementedError
+        with open(raw_filename) as f:
+            raw_doc = json.load(f)
+
+        if 'specimenName' not in raw_doc:
+            print(f"skipping {metadata['url']}, no specimenName")
+            return
+
+        converted_doc = {
+            'contact': None,
+            'contributor': None,
+            'creator': None,
+            'description': raw_doc['type'],
+            'discipline': None,
+            'identifier': f"https://hdl.handle.net/{raw_doc['id']}",
+            'instrument': None,  # FIXME
+            'modification_date': raw_doc['created'],
+            'keywords': None,
+            'language': None,
+            'publication_year': None,
+            'publisher': self._resolve_organization(raw_doc['organizationId']),
+            'related_identifier': None,
+            'repo': self.RI,
+            'rights': None,
+            'size': None,
+            'source': self._landing_page(raw_doc['id']),
+            'spatial_coverage': None,  # FIXME
+            'temporal_coverage': None,
+            'title': raw_doc['specimenName'],
+            'version': None,
+            'essential_variables': None,
+            'potential_topics': None,
+            }
+
+        self.language_extraction(raw_doc, converted_doc)
+        self.post_process_doc(converted_doc)
+        self.save_index_record(converted_doc, converted_filename)
+
+    @staticmethod
+    def _resolve_organization(org_id):
+        org_id = re.match(r'https?://ror\.org/(\w+)', org_id).group(1)
+        url = f'https://api.ror.org/organizations/{org_id}'
+        with urllib.request.urlopen(url) as r:
+            org_data = json.load(r)
+        return org_data['name']
+
+    @staticmethod
+    def _landing_page(id_):
+        return f"https://sandbox.dissco.tech/ds/{id_}"
 
 
 class DiSSCoRepository(Repository):
