@@ -57,8 +57,13 @@ class DiSSCoDownloader(Downloader):
 
 
 class DiSSCoConverter(Converter):
-    contextual_text_fields = ['']  # FIXME
-    contextual_text_fallback_field = ''  # FIXME
+    contextual_text_fields = ['specimenName', 'type', 'dwc:basisOfRecord'
+                              'dwc:occurrenceStatus', 'dwc:occurrenceRemarks',
+                              'dwc:class', 'dwc:order', 'dwc:genus',
+                              'dwc:family', 'dwc:specificEpiteth',
+                              'dwc:preparations',
+                              ]
+    contextual_text_fallback_field = 'specimenName'
     RI = 'DiSSCo'
 
     def convert_record(self, raw_filename, converted_filename, metadata):
@@ -71,24 +76,24 @@ class DiSSCoConverter(Converter):
 
         converted_doc = {
             'contact': None,
-            'contributor': None,
-            'creator': None,
+            'contributor': raw_doc['data'].get('dwc:identifiedBy'),
+            'creator': raw_doc['data'].get('dwc:recordedBy'),
             'description': raw_doc['type'],
             'discipline': None,
             'identifier': f"https://hdl.handle.net/{raw_doc['id']}",
-            'instrument': None,  # FIXME
+            'instrument': raw_doc['data'].get('dwc:basisOfRecord', 'Specimen'),
             'modification_date': raw_doc['created'],
             'keywords': None,
             'language': None,
             'publication_year': None,
             'publisher': self._resolve_organization(raw_doc['organizationId']),
-            'related_identifier': None,
+            'related_identifier': raw_doc['data'].get('dwc:catalogNumber'),
             'repo': self.RI,
-            'rights': None,
+            'rights': raw_doc['data'].get('dcterms:bibliographicCitation'),
             'size': None,
             'source': self._landing_page(raw_doc['id']),
-            'spatial_coverage': None,  # FIXME
-            'temporal_coverage': None,
+            'spatial_coverage': self._extract_location(raw_doc),
+            'temporal_coverage': self._extract_temporal_coverage(raw_doc),
             'title': raw_doc['specimenName'],
             'version': None,
             'essential_variables': None,
@@ -110,6 +115,38 @@ class DiSSCoConverter(Converter):
     @staticmethod
     def _landing_page(id_):
         return f"https://sandbox.dissco.tech/ds/{id_}"
+
+    @staticmethod
+    def _extract_location(doc):
+        keywords = [
+            'dwc:locality',
+            'dwc:municipality',
+            'dwc:county',
+            'dwc:stateProvince',
+            'dwc:country',
+            'dwc:higherGeography',
+            'dwc:continent',
+            ]
+        values = [doc['data'].get(k) for k in keywords]
+        values = [v for v in values if v is not None]
+        if not values:
+            return None
+        return values
+
+    @staticmethod
+    def _extract_temporal_coverage(doc):
+        keywords = [
+            'dwc:earliestEonOrLowestEonothem',
+            'dwc:earliestEraOrLowestErathem',
+            'dwc:earliestPeriodOrLowestSystem',
+            'dwc:earliestEpochOrLowestSeries',
+            'dwc:earliestAgeOrLowestStage',
+            ]
+        values = [doc['data'].get(k) for k in keywords]
+        values = [v for v in values if v is not None]
+        if not values:
+            return None
+        return values
 
 
 class DiSSCoRepository(Repository):
