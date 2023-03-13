@@ -102,9 +102,15 @@ class Converter(abc.ABC):
         normalized = " ".join(
             self.lt.lemma.lemmatize(word)
             for word in punc_free.split()
+            )
+        filtered = ' '.join(
+            word for word in normalized.split()
             if len(word) > 2 and self.lt.EnglishTerm.check(word)
             )
-        return normalized
+        if filtered:
+            return filtered
+        else:
+            return normalized
 
     def topic_mining(self, doc):
         if not doc:
