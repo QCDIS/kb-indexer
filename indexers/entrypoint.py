@@ -1,4 +1,5 @@
 #!/bin/env/python3
+from threading import Event
 
 import click
 
@@ -18,7 +19,7 @@ def cli():
 @cli.command(help='Wait forever.')
 def wait():
     click.echo('Waiting...')
-    input()
+    Event().wait()
 
 
 cli.add_command(api)
