@@ -15,6 +15,12 @@ def cli():
     pass
 
 
+@cli.command(help='Wait forever.')
+def wait():
+    click.echo('Waiting...')
+    input()
+
+
 cli.add_command(api)
 cli.add_command(dataset)
 cli.add_command(notebook)
