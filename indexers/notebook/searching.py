@@ -17,8 +17,9 @@ class NotebookSearcher(abc.ABC):
     source_name: str
 
     def __init__(self):
-        base = os.path.join(
-            os.path.dirname(__file__), 'data', self.source_name)
+        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
+        data_dir = os.path.join(data_dir, 'notebook')
+        base = os.path.join(data_dir, self.source_name)
         self.output_dir = os.path.join(base, 'repositories_metadata/')
         os.makedirs(self.output_dir, exist_ok=True)
 

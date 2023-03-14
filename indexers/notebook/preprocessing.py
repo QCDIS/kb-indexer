@@ -191,12 +191,13 @@ class RawNotebookPreprocessor:
     '''
     def __init__(self, source_name: str):
         self.source_name = source_name
+
+        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
+        data_dir = os.path.join(data_dir, 'notebook')
         self.directories = {
-            'input_notebooks': f'data/{self.source_name}/raw_notebooks/',
-            'input_metadata': f'data/{self.source_name}/notebooks_metadata/',
-            'output': f'data/{self.source_name}/notebook_lists/',
+            'input': f'{data_dir}/{self.source_name}/raw_notebooks/',
+            'output': f'{data_dir}/{self.source_name}/notebook_lists/',
             }
-        self._add_abs_path_to_directories()
         self._make_directories()
         self.files = {
             'raw_notebooks': os.path.join(self.directories['output'],
@@ -206,10 +207,6 @@ class RawNotebookPreprocessor:
             'updated_processed_notebooks': os.path.join(
                 self.directories['output'], 'updated_processed_notebooks.csv'),
             }
-
-    def _add_abs_path_to_directories(self):
-        for k, v in self.directories.items():
-            self.directories[k] = os.path.join(os.path.dirname(__file__), v)
 
     def _make_directories(self):
         for d in self.directories.values():
@@ -223,17 +220,17 @@ class RawNotebookPreprocessor:
         contents = NotebookContents()
         raw_notebooks = []
         # Go through all the .ipynb file and store the contents in one single .csv file. 
-        for path, _, files in os.walk(self.directories['input_notebooks']):
+        for path, _, files in os.walk(self.directories['input']):
             for name in files:
+                print(name)
                 if name.endswith('.ipynb'): 
                     file_path = os.path.join(
-                        self.directories['input_notebooks'], name)
+                        self.directories['input'], name)
                     notebook_json = utils.read_json_file(file_path)
                     notebook = json.dumps(notebook_json)
 
                     # Read metadata
-                    metadata_path = os.path.join(
-                        self.directories['input_metadata'], name[:-6]+'.json')
+                    metadata_path = os.path.join(file_path + '.json')
                     metadata = utils.read_json_file(metadata_path)
 
                     # Get HTML URL
