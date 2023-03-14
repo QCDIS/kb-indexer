@@ -21,3 +21,9 @@ source = 'https://github.com/QCDIS/kb-indexer'
 
 [project.scripts]
 kb_indexer = 'indexers.entrypoint:cli'
+
+[tool.setuptools.packages.find]
+include = ['indexers', 'indexers.*']
+
+[tool.setuptools.package-data]
+indexers = ["*/data_sources/*"]
