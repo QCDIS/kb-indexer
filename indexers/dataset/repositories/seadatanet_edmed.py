@@ -1,39 +1,30 @@
 import re
 import string
-import textwrap
 
 from bs4 import BeautifulSoup
-import requests
 
 from .common import Repository
-from ..download import TwoStepDownloader
+from ..download import TwoStepDownloader, SPARQLDownloader
 from ..convert import Converter
 from ..index import Indexer
 
 
-class SeaDataNetEDMEDDownloader(TwoStepDownloader):
+class SeaDataNetEDMEDDownloader(TwoStepDownloader, SPARQLDownloader):
     documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql'
     document_extension = '.html'
 
     def get_documents_urls(self, max_records=None):
-        sparql_query = r"""
+        query = r"""
         select ?EDMEDRecord
         where {
             ?EDMEDRecord a <http://www.w3.org/ns/dcat#Dataset>
         }
         """
-        if max_records is not None:
-            sparql_query += f'limit {max_records}\n'
-        sparql_query = textwrap.dedent(sparql_query).strip()
-
-        r = requests.post(
+        return self.sparql_query(
             self.documents_list_url,
-            headers={
-                'Cache-Control': 'no-cache',
-                'accept': 'text/csv'},
-            data={'query': sparql_query},
+            query,
+            max_records=max_records,
             )
-        return r.text.splitlines()[1:]
 
 
 class SeaDataNetEDMEDConverter(Converter):

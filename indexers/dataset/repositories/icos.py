@@ -1,21 +1,19 @@
 import json
-import textwrap
 
 from bs4 import BeautifulSoup
-import requests
 
 from .common import Repository
-from ..download import TwoStepDownloader
+from ..download import TwoStepDownloader, SPARQLDownloader
 from ..convert import Converter
 from ..index import Indexer
 
 
-class ICOSDownloader(TwoStepDownloader):
+class ICOSDownloader(TwoStepDownloader, SPARQLDownloader):
     documents_list_url = 'https://meta.icos-cp.eu/sparql'
     document_extension = '.html'
 
     def get_documents_urls(self, max_records=None):
-        sparql_query = r"""
+        query = r"""
             prefix cpmeta: <http://meta.icos-cp.eu/ontologies/cpmeta/>
             prefix prov: <http://www.w3.org/ns/prov#>
             select ?dobj
@@ -25,18 +23,11 @@ class ICOSDownloader(TwoStepDownloader):
                 FILTER NOT EXISTS {[] cpmeta:isNextVersionOf ?dobj}
             }
             """
-        if max_records is not None:
-            sparql_query += f'limit {max_records}\n'
-        sparql_query = textwrap.dedent(sparql_query).strip()
-
-        r = requests.post(
+        return self.sparql_query(
             self.documents_list_url,
-            headers={
-                'Cache-Control': 'no-cache',
-                'accept': 'text/csv'},
-            data={'query': sparql_query},
+            query,
+            max_records=max_records,
             )
-        return r.text.splitlines()[1:]
 
 
 class ICOSConverter(Converter):

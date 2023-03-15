@@ -1,10 +1,12 @@
 from datetime import datetime
 import abc
 import json
+import textwrap
 
 from tqdm import tqdm
 import urllib.request
 import urllib.error
+import requests
 
 from .common import Paths
 from .index import Indexer
@@ -42,6 +44,24 @@ class Downloader(abc.ABC):
     @abc.abstractmethod
     def download_all(self, reindex=False, max_records=None):
         pass
+
+
+class SPARQLDownloader(Downloader, abc.ABC):
+
+    @staticmethod
+    def sparql_query(endpoint, query, max_records=None):
+        if max_records is not None:
+            query += f'limit {max_records}\n'
+        query = textwrap.dedent(query).strip()
+
+        r = requests.post(
+            endpoint,
+            headers={
+                'Cache-Control': 'no-cache',
+                'accept': 'text/csv'},
+            data={'query': query},
+            )
+        return r.text.splitlines()[1:]
 
 
 class TwoStepDownloader(Downloader, abc.ABC):
