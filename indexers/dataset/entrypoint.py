@@ -81,10 +81,15 @@ def dataset(ctx, repos, reindex, keep_files):
 
 
 @dataset.command(help='Download raw records.')
+@click.option(
+    '--max-records',
+    help='Maximum number of records to download.',
+    type=int,
+    )
 @click.pass_obj
-def download(pipelines):
+def download(pipelines, max_records):
     for p in pipelines:
-        p.download()
+        p.download(max_records=max_records)
 
 
 @dataset.command(help='Convert raw records.')

@@ -40,7 +40,7 @@ class Downloader(abc.ABC):
             print(f'Could not open {url}, skipping')
 
     @abc.abstractmethod
-    def download_all(self, reindex=False):
+    def download_all(self, reindex=False, max_records=None):
         pass
 
 
@@ -49,11 +49,12 @@ class TwoStepDownloader(Downloader, abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_documents_urls(self):
+    def get_documents_urls(self, max_records=None):
         pass
 
-    def download_all(self, reindex=False):
-        for url in tqdm(self.get_documents_urls(), desc='downloading records'):
+    def download_all(self, reindex=False, max_records=None):
+        for url in tqdm(self.get_documents_urls(max_records=max_records),
+                        desc='downloading records'):
             if reindex or not self.indexer.url_is_indexed(url):
                 meta = self.gen_metadata(url)
                 self.save_metadata(meta)

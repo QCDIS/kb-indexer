@@ -13,7 +13,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader):
     documents_list_url = 'https://cdi.seadatanet.org/report/aggregation'
     document_extension = '.json'
 
-    def get_documents_urls(self):
+    def get_documents_urls(self, max_records=None):
         with urllib.request.urlopen(self.documents_list_url) as r:
             tree = ElementTree.parse(r)
         records_root = tree.getroot()
@@ -24,7 +24,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader):
             if pos and pos + 4 == len(url):
                 url = url.replace("/xml", "/json")
             urls.append(url)
-        return urls
+        return urls[:max_records]
 
 
 class SeaDataNetCDIConverter(Converter):

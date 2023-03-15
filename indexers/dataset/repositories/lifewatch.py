@@ -16,7 +16,7 @@ from ..index import Indexer
 
 class LifeWatchDownloader(TwoStepDownloader):
 
-    def get_documents_urls(self):
+    def get_documents_urls(self, max_records=None):
         driver = webdriver.Chrome(ChromeDriverManager().install())
         driver.get(
             "https://metadatacatalogue.lifewatch.eu/srv/eng/catalog.search#/search?facet.q=type%2Fdataset&resultType=details&sortBy=relevance&from=301&to=400&fast=index&_content_type=json"
@@ -45,7 +45,7 @@ class LifeWatchDownloader(TwoStepDownloader):
         # ------------
         with open(self.paths.dataset_urls_filename, 'r') as f:
             urls = [line.strip() for line in f.readlines()]
-        return urls
+        return urls[:max_records]
 
 
 class LifeWatchConverter(Converter):

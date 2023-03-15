@@ -46,12 +46,14 @@ class DiSSCoDownloader(Downloader):
                     json.dump(specimen, f)
         return response
 
-    def download_all(self, reindex=False):
+    def download_all(self, reindex=False, max_records=None):
         response = self._download_page(0, reindex=reindex)
         page = 1
         with tqdm(desc='downloading records') as pbar:
             while len(response):
                 pbar.update(len(response))
+                if (max_records is not None) and (pbar.n >= max_records):
+                    return
                 response = self._download_page(page, reindex=reindex)
                 page += 1
 

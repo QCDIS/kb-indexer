@@ -1,9 +1,9 @@
-import json
 import re
 import string
+import textwrap
 
 from bs4 import BeautifulSoup
-import urllib.request
+import requests
 
 from .common import Repository
 from ..download import TwoStepDownloader
@@ -12,15 +12,28 @@ from ..index import Indexer
 
 
 class SeaDataNetEDMEDDownloader(TwoStepDownloader):
-    documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
+    documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql'
     document_extension = '.html'
 
-    def get_documents_urls(self):
-        with urllib.request.urlopen(self.documents_list_url) as r:
-            data = json.load(r)
-        urls = [record["EDMEDRecord"]["value"]
-                for record in data["results"]["bindings"]]
-        return urls
+    def get_documents_urls(self, max_records=None):
+        sparql_query = r"""
+        select ?EDMEDRecord
+        where {
+            ?EDMEDRecord a <http://www.w3.org/ns/dcat#Dataset>
+        }
+        """
+        if max_records is not None:
+            sparql_query += f'limit {max_records}\n'
+        sparql_query = textwrap.dedent(sparql_query).strip()
+
+        r = requests.post(
+            self.documents_list_url,
+            headers={
+                'Cache-Control': 'no-cache',
+                'accept': 'text/csv'},
+            data={'query': sparql_query},
+            )
+        return r.text.splitlines()[1:]
 
 
 class SeaDataNetEDMEDConverter(Converter):

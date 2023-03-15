@@ -14,7 +14,7 @@ class ICOSDownloader(TwoStepDownloader):
     documents_list_url = 'https://meta.icos-cp.eu/sparql'
     document_extension = '.html'
 
-    def get_documents_urls(self):
+    def get_documents_urls(self, max_records=None):
         sparql_query = r"""
             prefix cpmeta: <http://meta.icos-cp.eu/ontologies/cpmeta/>
             prefix prov: <http://www.w3.org/ns/prov#>
@@ -25,6 +25,8 @@ class ICOSDownloader(TwoStepDownloader):
                 FILTER NOT EXISTS {[] cpmeta:isNextVersionOf ?dobj}
             }
             """
+        if max_records is not None:
+            sparql_query += f'limit {max_records}\n'
         sparql_query = textwrap.dedent(sparql_query).strip()
 
         r = requests.post(
