@@ -27,7 +27,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: $DOCKERHUB_NAMESPACE/$DOCKER_IMAGE_NAME
+          images: ${{ DOCKERHUB_NAMESPACE }}/${{ DOCKER_IMAGE_NAME }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
