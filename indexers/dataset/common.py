@@ -5,10 +5,8 @@ from .. import utils
 
 class Paths:
     def __init__(self, repo_name: str):
-        data_dir = self._add_dir(
-            os.path.relpath(os.path.dirname(__file__)),
-            'data',
-            )
+        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
+        data_dir = os.path.join(data_dir, 'dataset')
 
         # ancillary data
         self.nltk_data_dir = self._add_dir(data_dir, 'nltk_data')

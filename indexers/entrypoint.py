@@ -1,4 +1,5 @@
 #!/bin/env/python3
+from threading import Event
 
 import click
 
@@ -13,6 +14,12 @@ from .web.entrypoint import web
     )
 def cli():
     pass
+
+
+@cli.command(help='Wait forever.')
+def wait():
+    click.echo('Waiting...')
+    Event().wait()
 
 
 cli.add_command(api)

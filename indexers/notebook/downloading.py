@@ -10,8 +10,9 @@ class NotebookDownloader(abc.ABC):
     source_name: str
 
     def __init__(self):
-        base = os.path.join(
-            os.path.dirname(__file__), 'data', self.source_name)
+        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
+        data_dir = os.path.join(data_dir, 'notebook')
+        base = os.path.join(data_dir, self.source_name)
         self.input_dir = os.path.join(base, 'repositories_metadata/')
         self.output_dir = os.path.join(base, 'raw_notebooks/')
         os.makedirs(self.input_dir, exist_ok=True)

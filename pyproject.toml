@@ -1,0 +1,29 @@
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'kb-indexer'
+version='2023.03.03'
+description = 'Indexer for the ENVRI-FAIR knowledge base'
+readme = 'README.md'
+maintainers = [
+    {name = 'Gabriel Pelouze', email = 'gabriel.pelouze@lifewatch.eu'},
+]
+requires-python = '>=3.9'
+dynamic = ['dependencies']
+
+[tool.setuptools.dynamic]
+dependencies = {file = ['requirements.txt']}
+
+[project.urls]
+source = 'https://github.com/QCDIS/kb-indexer'
+
+[project.scripts]
+kb_indexer = 'indexers.entrypoint:cli'
+
+[tool.setuptools.packages.find]
+include = ['indexers', 'indexers.*']
+
+[tool.setuptools.package-data]
+indexers = ["*/data_sources/*"]

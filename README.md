@@ -1,6 +1,8 @@
 # Knowledge base indexer
 
-## Setup (development)
+## Setup
+
+### Run locally
 
 ```shell
 virtualenv venv
@@ -11,17 +13,27 @@ python -m spacy download en_core_web_md
 ```
 
 
+### Run with Docker
+
+```shell
+docker build . --file docker/Dockerfile --tag kb-indexer
+docker run --name kb-indexer --env-file .env kb-indexer  # See env variables below
+docker exec -it kb-indexer bash
+```
+
+
 ## Configuration
 
 The following environment variables should be defined:
 
 ```
-ELASTICSEARCH_HOST
-ELASTICSEARCH_USERNAME
-ELASTICSEARCH_PASSWORD
-KAGGLE_USERNAME
-KAGGLE_KEY
-GITHUB_API_TOKEN
+DATA_DIR="/app/data"
+ELASTICSEARCH_HOST="https://host:PORT/path/"
+ELASTICSEARCH_USERNAME="<es username>"
+ELASTICSEARCH_PASSWORD="<es password>"
+KAGGLE_USERNAME="<A Kaggle username>"
+KAGGLE_KEY="<A Kaggle API key>"
+GITHUB_API_TOKEN="<A GitHub API token>"
 ```
 
 
