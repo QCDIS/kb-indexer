@@ -36,15 +36,16 @@ class SIOSDownloader(Downloader):
 
         return response
 
-    def download_all(self, reindex=False):
-        response = self._download_page(0, reindex=reindex)
-        offset = response['numberReturned']
+    def download_all(self, reindex=False, max_records=None, offset=0):
+        response = self._download_page(offset, reindex=reindex)
         with tqdm(desc='downloading records',
                   total=response['numberMatched']) as pbar:
             while response['numberReturned']:
                 pbar.update(response['numberReturned'])
-                response = self._download_page(offset, reindex=reindex)
+                if (max_records is not None) and (pbar.n >= max_records):
+                    return
                 offset += response['numberReturned']
+                response = self._download_page(offset, reindex=reindex)
 
 
 class SIOSConverter(Converter):

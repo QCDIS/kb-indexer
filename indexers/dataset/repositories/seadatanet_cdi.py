@@ -4,27 +4,27 @@ from xml.etree import ElementTree
 import urllib.request
 
 from .common import Repository
-from ..download import TwoStepDownloader
+from ..download import TwoStepDownloader, SPARQLDownloader
 from ..convert import Converter
 from ..index import Indexer
 
 
-class SeaDataNetCDIDownloader(TwoStepDownloader):
-    documents_list_url = 'https://cdi.seadatanet.org/report/aggregation'
+class SeaDataNetCDIDownloader(TwoStepDownloader, SPARQLDownloader):
+    documents_list_url = 'https://cdi.seadatanet.org/sparql/sparql'
     document_extension = '.json'
 
-    def get_documents_urls(self):
-        with urllib.request.urlopen(self.documents_list_url) as r:
-            tree = ElementTree.parse(r)
-        records_root = tree.getroot()
-        urls = []
-        for record in records_root:
-            url = record.text
-            pos = url.rfind("/xml")
-            if pos and pos + 4 == len(url):
-                url = url.replace("/xml", "/json")
-            urls.append(url)
-        return urls
+    def get_documents_urls(self, max_records=None, offset=0):
+        query = r"""
+        SELECT ?o WHERE {
+            ?s <http://www.w3.org/ns/dcat#dataset> ?o
+        }
+        """
+        return self.sparql_query(
+            self.documents_list_url,
+            query,
+            max_records=max_records,
+            offset=offset,
+            )[:-1]
 
 
 class SeaDataNetCDIConverter(Converter):

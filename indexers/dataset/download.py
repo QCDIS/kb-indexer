@@ -1,10 +1,12 @@
 from datetime import datetime
 import abc
 import json
+import textwrap
 
 from tqdm import tqdm
 import urllib.request
 import urllib.error
+import requests
 
 from .common import Paths
 from .index import Indexer
@@ -40,8 +42,28 @@ class Downloader(abc.ABC):
             print(f'Could not open {url}, skipping')
 
     @abc.abstractmethod
-    def download_all(self, reindex=False):
+    def download_all(self, reindex=False, max_records=None, offset=0):
         pass
+
+
+class SPARQLDownloader(Downloader, abc.ABC):
+
+    @staticmethod
+    def sparql_query(endpoint, query, max_records=None, offset=0):
+        if max_records is not None:
+            query += f'limit {max_records}\n'
+        if offset:
+            query += f'offset {offset}\n'
+        query = textwrap.dedent(query).strip()
+
+        r = requests.post(
+            endpoint,
+            headers={
+                'Cache-Control': 'no-cache',
+                'accept': 'text/csv'},
+            data={'query': query},
+            )
+        return r.text.splitlines()[1:]
 
 
 class TwoStepDownloader(Downloader, abc.ABC):
@@ -49,11 +71,13 @@ class TwoStepDownloader(Downloader, abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_documents_urls(self):
+    def get_documents_urls(self, max_records=None, offset=0):
         pass
 
-    def download_all(self, reindex=False):
-        for url in tqdm(self.get_documents_urls(), desc='downloading records'):
+    def download_all(self, reindex=False, max_records=None, offset=0):
+        for url in tqdm(self.get_documents_urls(max_records=max_records,
+                                                offset=offset),
+                        desc='downloading records'):
             if reindex or not self.indexer.url_is_indexed(url):
                 meta = self.gen_metadata(url)
                 self.save_metadata(meta)

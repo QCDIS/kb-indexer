@@ -1,26 +1,31 @@
-import json
 import re
 import string
 
 from bs4 import BeautifulSoup
-import urllib.request
 
 from .common import Repository
-from ..download import TwoStepDownloader
+from ..download import TwoStepDownloader, SPARQLDownloader
 from ..convert import Converter
 from ..index import Indexer
 
 
-class SeaDataNetEDMEDDownloader(TwoStepDownloader):
-    documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql?query=select+%3FEDMEDRecord+%3FTitle+where+%7B%3FEDMEDRecord+a+%3Chttp%3A%2F%2Fwww.w3.org%2Fns%2Fdcat%23Dataset%3E+%3B+%3Chttp%3A%2F%2Fpurl.org%2Fdc%2Fterms%2Ftitle%3E+%3FTitle+.%7D+&output=json&stylesheet='
+class SeaDataNetEDMEDDownloader(TwoStepDownloader, SPARQLDownloader):
+    documents_list_url = 'https://edmed.seadatanet.org/sparql/sparql'
     document_extension = '.html'
 
-    def get_documents_urls(self):
-        with urllib.request.urlopen(self.documents_list_url) as r:
-            data = json.load(r)
-        urls = [record["EDMEDRecord"]["value"]
-                for record in data["results"]["bindings"]]
-        return urls
+    def get_documents_urls(self, max_records=None, offset=0):
+        query = r"""
+        select ?EDMEDRecord
+        where {
+            ?EDMEDRecord a <http://www.w3.org/ns/dcat#Dataset>
+        }
+        """
+        return self.sparql_query(
+            self.documents_list_url,
+            query,
+            max_records=max_records,
+            offset=offset,
+            )
 
 
 class SeaDataNetEDMEDConverter(Converter):
