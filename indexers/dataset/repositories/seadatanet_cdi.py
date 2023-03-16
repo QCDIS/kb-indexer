@@ -24,7 +24,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader, SPARQLDownloader):
             query,
             max_records=max_records,
             offset=offset,
-            )
+            )[:-1]
 
 
 class SeaDataNetCDIConverter(Converter):
