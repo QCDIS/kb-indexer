@@ -42,16 +42,18 @@ class Downloader(abc.ABC):
             print(f'Could not open {url}, skipping')
 
     @abc.abstractmethod
-    def download_all(self, reindex=False, max_records=None):
+    def download_all(self, reindex=False, max_records=None, offset=0):
         pass
 
 
 class SPARQLDownloader(Downloader, abc.ABC):
 
     @staticmethod
-    def sparql_query(endpoint, query, max_records=None):
+    def sparql_query(endpoint, query, max_records=None, offset=0):
         if max_records is not None:
             query += f'limit {max_records}\n'
+        if offset:
+            query += f'offset {offset}\n'
         query = textwrap.dedent(query).strip()
 
         r = requests.post(
@@ -69,11 +71,12 @@ class TwoStepDownloader(Downloader, abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_documents_urls(self, max_records=None):
+    def get_documents_urls(self, max_records=None, offset=0):
         pass
 
-    def download_all(self, reindex=False, max_records=None):
-        for url in tqdm(self.get_documents_urls(max_records=max_records),
+    def download_all(self, reindex=False, max_records=None, offset=0):
+        for url in tqdm(self.get_documents_urls(max_records=max_records,
+                                                offset=offset),
                         desc='downloading records'):
             if reindex or not self.indexer.url_is_indexed(url):
                 meta = self.gen_metadata(url)

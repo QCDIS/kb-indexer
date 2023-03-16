@@ -13,7 +13,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader, SPARQLDownloader):
     documents_list_url = 'https://cdi.seadatanet.org/sparql/sparql'
     document_extension = '.json'
 
-    def get_documents_urls(self, max_records=None):
+    def get_documents_urls(self, max_records=None, offset=0):
         query = r"""
         SELECT ?o WHERE {
             ?s <http://www.w3.org/ns/dcat#dataset> ?o
@@ -23,6 +23,7 @@ class SeaDataNetCDIDownloader(TwoStepDownloader, SPARQLDownloader):
             self.documents_list_url,
             query,
             max_records=max_records,
+            offset=offset,
             )
 
 

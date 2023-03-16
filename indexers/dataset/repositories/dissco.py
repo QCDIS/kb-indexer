@@ -46,16 +46,16 @@ class DiSSCoDownloader(Downloader):
                     json.dump(specimen, f)
         return response
 
-    def download_all(self, reindex=False, max_records=None):
-        response = self._download_page(0, reindex=reindex)
-        page = 1
+    def download_all(self, reindex=False, max_records=None, offset=0):
+        page = offset // self.page_size
+        response = self._download_page(page, reindex=reindex)
         with tqdm(desc='downloading records') as pbar:
             while len(response):
                 pbar.update(len(response))
                 if (max_records is not None) and (pbar.n >= max_records):
                     return
-                response = self._download_page(page, reindex=reindex)
                 page += 1
+                response = self._download_page(page, reindex=reindex)
 
 
 class DiSSCoConverter(Converter):

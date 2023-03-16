@@ -12,11 +12,12 @@ class Pipeline(abc.ABC):
 
         self.paths = Paths(self.repo.name)
 
-    def download(self, max_records=None):
+    def download(self, max_records=None, offset=0):
         print(f'Download records from {self.repo.name}')
         self.repo.downloader(self.paths).download_all(
             reindex=self.reindex,
             max_records=max_records,
+            offset=offset,
             )
 
     def convert(self):

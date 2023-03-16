@@ -12,7 +12,7 @@ class ICOSDownloader(TwoStepDownloader, SPARQLDownloader):
     documents_list_url = 'https://meta.icos-cp.eu/sparql'
     document_extension = '.html'
 
-    def get_documents_urls(self, max_records=None):
+    def get_documents_urls(self, max_records=None, offset=0):
         query = r"""
             prefix cpmeta: <http://meta.icos-cp.eu/ontologies/cpmeta/>
             prefix prov: <http://www.w3.org/ns/prov#>
@@ -27,6 +27,7 @@ class ICOSDownloader(TwoStepDownloader, SPARQLDownloader):
             self.documents_list_url,
             query,
             max_records=max_records,
+            offset=offset,
             )
 
 
