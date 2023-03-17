@@ -6,9 +6,15 @@ from . import check_es
 
 @click.group(
     help='Check system data.',
-    invoke_without_command=True,
     )
 def check():
+    pass
+
+
+@check.command(
+    help='Check all.',
+    )
+def all():
     print('\nDisk contents:')
     check_disk.main()
 
