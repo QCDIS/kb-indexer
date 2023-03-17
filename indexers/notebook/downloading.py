@@ -20,10 +20,11 @@ class NotebookDownloader(abc.ABC):
         os.makedirs(self.output_dir, exist_ok=True)
 
     @abc.abstractmethod
-    def download(self, metadata: dict, output_file: str) -> bool:
+    def download(self, repo_metadata: dict, output_file: str,
+                 output_metadata_file: str) -> bool:
         """ Download notebooks
 
-        :param metadata: repository metadata
+        :param repo_metadata: repository metadata
         :param output_file: output filename (.ipynb)
         :return: True when the file is correctly downloaded or already existed
         """
@@ -39,15 +40,16 @@ class NotebookDownloader(abc.ABC):
                 metadata = json.load(f)
             output_file = os.path.join(
                 self.output_dir, f"{metadata['id']}.ipynb")
-            self.download(metadata, output_file)
+            output_metadata_file = f'{output_file}.json'
+            self.download(metadata, output_file, output_metadata_file)
 
 
 class KaggleNotebookDownloader(NotebookDownloader):
 
     source_name = 'Kaggle'
 
-    def download(self, metadata, output_file):
-        notebook_ref = metadata['name']
+    def download(self, repo_metadata, output_file, output_metadata_file):
+        notebook_ref = repo_metadata['name']
 
         if pd.isna(notebook_ref):
             print(f'[*NO REF] {notebook_ref}')
@@ -67,7 +69,7 @@ class KaggleNotebookDownloader(NotebookDownloader):
             # notebook destination (/path/<output_file>.ipynb)
             'notebook': output_file,
             # metadata destination (/path/<output_file>.ipynb.json)
-            'metadata': f'{output_file}.json',
+            'metadata': output_metadata_file,
             }
 
         # Check if the file is already downloaded
@@ -80,9 +82,6 @@ class KaggleNotebookDownloader(NotebookDownloader):
 
             if not os.path.isfile(files['dl_notebook']):
                 print(f'[***FAIL] {notebook_ref}')
-                # It is very important to delete the metadata file,
-                # otherwise the following downloading will fail
-                os.remove(files['dl_metadata'])
                 return False
 
             # Rename the notebook file
@@ -92,15 +91,22 @@ class KaggleNotebookDownloader(NotebookDownloader):
                 print("Exception: ", err)
                 return False
 
-            # Rename the metadata file
-            try:
-                os.rename(files['dl_metadata'], files['metadata'])
-            except FileNotFoundError as err:
-                print("Exception: ", err)
-                return False
+            # Save metadata
+
+            with open(files['dl_metadata'], 'r') as f:
+                nb_metadata = json.load(f)
+            metadata = repo_metadata.copy()
+            metadata['code_file'] = nb_metadata['code_file']
+            with open(files['metadata'], 'w') as f:
+                json.dump(metadata, f)
+
         except Exception as err:
             print("Exception: ", err)
             return False
+
+        finally:
+            os.remove(files['dl_metadata'])
+
         return True
 
 
@@ -108,5 +114,5 @@ class GithubNotebookDownloader(NotebookDownloader):
 
     source_name = 'GitHub'
 
-    def download(self, metadata, output_file):
+    def download(self, repo_metadata, output_file, output_metadata_file):
         raise NotImplementedError
