@@ -13,6 +13,6 @@ COPY indexers/ indexers/
 RUN apt update && apt install -y libenchant-dev
 RUN pip3 install . && \
     python3 -m spacy download en_core_web_sm && \
-    python3 -m spacy download en_core_web_sm
+    python3 -m spacy download en_core_web_md
 
 CMD ["kb_indexer", "wait"]
