@@ -11,4 +11,4 @@ venv/
 *.egg-info/
 .idea/
 
-./data/
+data/
