@@ -39,23 +39,18 @@ def list_indices(es_client):
             continue
         try:
             es_client.indices.open(index=index_name)
-            print(
-                index_name,
-                es_client.count(index=index_name)["count"],
-                )
+            n = es_client.count(index=index_name)["count"]
+            print(f'{n / 1e3:5.1f}k {index_name}')
             if index_name in indices_sub_groups:
                 keyword, terms = indices_sub_groups[index_name]
                 for term in terms:
-                    print(
-                        ' ',
-                        term,
-                        count_match(es_client, index_name, keyword, term)
-                        )
+                    n = count_match(es_client, index_name, keyword, term)
+                    print(f'    {n / 1e3:5.1f}k {term}')
         except AuthorizationException as e:
             print(f'could not open index {index_name} ({e})')
 
 
-if __name__ == '__main__':
+def main():
     es = utils.create_es_client()
     if es is None:
         raise ValueError('Could not connect to elasticsearch')

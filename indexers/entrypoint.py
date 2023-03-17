@@ -3,6 +3,7 @@ from threading import Event
 
 import click
 
+from .system_data_checks.entrypoint import check
 from .api.entrypoint import api
 from .dataset.entrypoint import dataset
 from .notebook.entrypoint import notebook
@@ -22,6 +23,7 @@ def wait():
     Event().wait()
 
 
+cli.add_command(check)
 cli.add_command(api)
 cli.add_command(dataset)
 cli.add_command(notebook)
