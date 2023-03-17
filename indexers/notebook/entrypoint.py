@@ -67,25 +67,31 @@ def search(pipelines):
         p.search()
 
 
-# @notebook.command(help='Download notebooks.')
-# @click.pass_obj
-# def download(pipelines):
-#     for p in pipelines:
-#         p.download()
-#
-#
-# @notebook.command(help='Preprocess notebooks.')
-# @click.pass_obj
-# def preprocess(pipelines):
-#     for p in pipelines:
-#         p.preprocess()
-#
+@notebook.command(help='Download notebooks.')
+@click.pass_obj
+def download(pipelines):
+    for p in pipelines:
+        p.download()
+
+
+@notebook.command(help='Preprocess notebooks.')
+@click.pass_obj
+def preprocess(pipelines):
+    for p in pipelines:
+        p.preprocess()
+
 
 @notebook.command(help='Index notebooks.')
+@click.option(
+    '-t', '--index-type',
+    help='Document type to index (metadata, summary, or contents).',
+    type=str,
+    default='metadata',
+    )
 @click.pass_obj
-def index(pipelines):
+def index(pipelines, index_type):
     for p in pipelines:
-        p.index()
+        p.index(index_type)
 
 
 @notebook.command(help=('Full indexing pipeline '
