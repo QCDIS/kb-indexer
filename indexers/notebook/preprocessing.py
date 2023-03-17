@@ -258,7 +258,7 @@ class RawNotebookPreprocessor:
             **statistics,
             }
         contents_doc = summary_doc.copy()
-        contents_doc["notebook_source_file"] = notebook
+        contents_doc["notebook_source_file"] = json.dumps(notebook)
 
         with open(summary_filename, 'w') as f:
             json.dump(summary_doc, f)
