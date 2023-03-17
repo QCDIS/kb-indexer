@@ -146,6 +146,7 @@ class GithubNotebookSearcher(NotebookSearcher):
                     'language': repo.language,
                     'html_url': repo.html_url,
                     'git_url': repo.clone_url,
+                    'source': self.source_name,
                     'query': query,
                     }
                 if new_record not in data:
