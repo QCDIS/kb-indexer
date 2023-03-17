@@ -40,12 +40,12 @@ def list_indices(es_client):
         try:
             es_client.indices.open(index=index_name)
             n = es_client.count(index=index_name)["count"]
-            print(f'{n / 1e3:5.1f}k {index_name}')
+            print(f'{n / 1e3:7.3f}k {index_name}')
             if index_name in indices_sub_groups:
                 keyword, terms = indices_sub_groups[index_name]
                 for term in terms:
                     n = count_match(es_client, index_name, keyword, term)
-                    print(f'    {n / 1e3:5.1f}k {term}')
+                    print(f'    {n / 1e3:7.3f}k {term}')
         except AuthorizationException as e:
             print(f'could not open index {index_name} ({e})')
 
