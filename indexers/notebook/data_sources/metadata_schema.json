@@ -1,0 +1,14 @@
+{
+  "id": "Unique identifier for the notebook",
+  "name": "Short name (GitHub repo name or Kaggle notebook name)",
+  "stargazers_count": "Number of stars or upvotes",
+  "forks_count": "Number of forks (GitHub only)",
+  "description": "Short description (Kaggle notebook title or GitHub repository description)",
+  "size": "Repository size (in kB, GitHub only)",
+  "language": "Programming language",
+  "html_url": "Landing page URL",
+  "git_url": "Git URL (different from html_url only for GitHub)",
+  "source": "Repository ('GitHub' or 'Kaggle')",
+  "query": "Query term that returned the notebook",
+  "code_file": "Notebook filename"
+}
