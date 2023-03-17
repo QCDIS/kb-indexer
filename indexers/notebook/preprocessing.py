@@ -182,12 +182,6 @@ class NotebookStatistics:
 
 
 class RawNotebookPreprocessor:
-    ''' A class for handling raw notebooks. 
-    
-    Args: 
-        - input_path: The path of a folder under which the .ipynb files reside. 
-        - output_path: The path of a folder where the .csv files will be placed. 
-    '''
     def __init__(self, source_name: str):
         self.source_name = source_name
 
