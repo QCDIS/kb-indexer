@@ -41,10 +41,14 @@ def create_es_client() -> Elasticsearch:
     elasticsearch_host = os.environ.get('ELASTICSEARCH_HOST')
     elasticsearch_username = os.environ.get('ELASTICSEARCH_USERNAME')
     elasticsearch_password = os.environ.get('ELASTICSEARCH_PASSWORD')
+    if elasticsearch_username and elasticsearch_password:
+        http_auth = [elasticsearch_username, elasticsearch_password]
+    else:
+        http_auth = None
 
     es = Elasticsearch(
         hosts=[elasticsearch_host],
-        http_auth=[elasticsearch_username, elasticsearch_password],
+        http_auth=http_auth,
         tim_out=30
         )
 
