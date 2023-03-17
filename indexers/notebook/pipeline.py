@@ -31,8 +31,7 @@ class Pipeline:
         print(f'Preprocess notebooks {self.repo.name}')
 
         p = self.repo.preprocessor(self.repo.name)
-        p.dump_raw_notebooks()
-        p.add_new_features()
+        p.bulk_preprocess()
 
     def index(self, index_type):
         print(f'Ingesting notebooks from {self.repo.name}')

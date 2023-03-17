@@ -1,7 +1,6 @@
 import os
 import json
-import pandas as pd
-from tqdm import tqdm
+import glob
 
 from .. import utils
 
@@ -195,125 +194,74 @@ class RawNotebookPreprocessor:
         data_dir = os.path.join(utils.get_data_dir(), 'notebook')
         self.directories = {
             'input': f'{data_dir}/{self.source_name}/raw_notebooks/',
-            'output': f'{data_dir}/{self.source_name}/notebook_lists/',
+            'output_summary': f'{data_dir}/'
+                              f'{self.source_name}/notebooks_summaries/',
+            'output_contents': f'{data_dir}/'
+                              f'{self.source_name}/notebooks_contents/',
             }
-        self._make_directories()
-        self.files = {
-            'raw_notebooks': os.path.join(self.directories['output'],
-                                          'raw_notebooks.csv'),
-            'processed_notebooks': os.path.join(self.directories['output'],
-                                                'processed_notebooks.csv'),
-            'updated_processed_notebooks': os.path.join(
-                self.directories['output'], 'updated_processed_notebooks.csv'),
-            }
-
-    def _make_directories(self):
         for d in self.directories.values():
             os.makedirs(d, exist_ok=True)
 
-    def dump_raw_notebooks(self):
-        ''' Dump raw notebooks to a .csv file. 
+    def bulk_preprocess(self):
 
-        And keep a record of notebook metadata in another .csv file
-        '''
-        contents = NotebookContents()
-        raw_notebooks = []
-        # Go through all the .ipynb file and store the contents in one single .csv file. 
-        for path, _, files in os.walk(self.directories['input']):
-            for name in files:
-                print(name)
-                if name.endswith('.ipynb'): 
-                    file_path = os.path.join(
-                        self.directories['input'], name)
-                    notebook_json = utils.read_json_file(file_path)
-                    notebook = json.dumps(notebook_json)
+        filename_pattern = os.path.join(self.directories['input'], '*.ipynb')
+        for filename in glob.glob(filename_pattern):
+            with open(filename) as f:
+                notebook = json.load(f)
+            with open(filename + '.json') as f:
+                notebook_metadata = json.load(f)
 
-                    # Read metadata
-                    metadata_path = os.path.join(file_path + '.json')
-                    metadata = utils.read_json_file(metadata_path)
+            basename = os.path.basename(filename)
+            basename = os.path.splitext(basename)[0] + '.json'
 
-                    # Get HTML URL
-                    html_url = self.get_html_url(source_id=metadata['id'])
+            self.preprocess(
+                notebook,
+                notebook_metadata,
+                os.path.join(self.directories['output_summary'], basename),
+                os.path.join(self.directories['output_contents'], basename),
+                )
 
-                    # Extract md_text from the notebook contents
-                    try: 
-                        extracted_contents = contents.extract_contents(notebook_json)
-                    except Exception as e: 
-                        print(e)
-                        continue
+    @staticmethod
+    def preprocess(notebook: dict, notebook_metadata: dict,
+                   summary_filename: str, contents_filename: str):
+        """
 
-                    new_record = {
-                        "source_id": metadata['id'], 
-                        "name": metadata['title'], 
-                        "file_name": name, 
-                        "html_url": html_url, 
-                        "description": extracted_contents['md_text'], 
-                        "source": self.source_name,
-                        "notebook_source_file": notebook
-                        }
-                    raw_notebooks.append(new_record)
-                else: 
-                    continue
-        
-        # Assign `docid` to each notebook
-        df_raw_notebooks = pd.DataFrame.from_dict(raw_notebooks)
-        df_raw_notebooks['docid'] = range(len(df_raw_notebooks))
-        df_raw_notebooks['docid'] = df_raw_notebooks['docid'].apply(lambda x: self.source_name + str(x))
-        print(f'Number of raw notebooks: {len(df_raw_notebooks)}\n')
+        :param notebook: Notebook contents (parsed .ipynb)
+        :param notebook_metadata: Notebook metadata
+        :param summary_filename: Path to the output notebook summary (json)
+        :param contents_filename: Path to the output notebook contents (json)
+        :return:
+        """
 
-        df_metadata = df_raw_notebooks.drop(columns=['notebook_source_file'])
-        df_raw_notebooks = df_raw_notebooks[['docid', 'source_id', 'name', 'file_name', 'source', 'notebook_source_file']]
+        try:
+            extracted_contents = NotebookContents().extract_contents(notebook)
+        except Exception as e:
+            print(e)
+            return
 
-        # Save the resulting files
-        notebook_file = self.files['raw_notebooks']
-        metadata_file = self.files['processed_notebooks']
+        try:
+            statistics = NotebookStatistics().cal_statistics(notebook)
+        except Exception as e:
+            print(e)
+            return
 
-        print(f'Saving raw notebooks to: {notebook_file}\n')
-        df_raw_notebooks.to_csv(notebook_file, index=False)
+        summary_doc = {
+            "id": notebook_metadata['id'],
+            "name": notebook_metadata['description'],
+            # FIXME: this is the title of Kaggle notebooks, but the description
+            #  of GitHub repositories, so many notebooks will have the same
+            #  name.
+            "file_name": notebook_metadata['code_file'],
+            "html_url": notebook_metadata['html_url'],
+            "source": notebook_metadata['source'],
+            "description": extracted_contents['md_text'],
+            **statistics,
+            }
+        contents_doc = summary_doc.copy()
+        contents_doc["notebook_source_file"] = notebook
 
-        print(f'Saving notebook metadata to: {metadata_file}\n')
-        df_metadata.to_csv(metadata_file, index=False)
+        with open(summary_filename, 'w') as f:
+            json.dump(summary_doc, f)
 
-
-    def get_html_url(self, source_id):
-        if self.source_name =='Kaggle':
-            return ("https://www.kaggle.com/code/" + source_id)
-        elif self.source_name =='GitHub':
-            return ' '  # TODO
-        else:
-            raise ValueError
-
-    def add_new_features(self):
-        ''' Add new features extracted from notebook contents to existent records.
-
-        Args:
-            - df_features: pandas.DataFrame.
-        '''
-        df_features = self.extract_new_features(self.source_name)
-        # df_notebooks = pd.read_csv(os.path.join(output_dir, source_name + '_raw_notebooks.csv'))
-        df_metadata = pd.read_csv(self.files['processed_notebooks'])
-
-        # Add features to preprocessed notebooks
-        df_metadata = df_metadata.merge(df_features, how='left', on='docid')
-
-        # Save updated metadata file
-        metadata_file = self.files['updated_processed_notebooks']
-
-        print(f'Saving updated notebook metadata to: {metadata_file}\n')
-        df_metadata.to_csv(metadata_file, index=False)
-        return True
-
-    def extract_new_features(self, source_name):
-        ''' Extract new features ['language', 'num_code_cells', 'num_md_cells', 'len_md_text']
-        '''
-        df_notebooks = pd.read_csv(self.files['raw_notebooks'])
-        # Compute the statistics of notebooks
-        statistics = NotebookStatistics()
-        def extract_new_contents(notebook_str):
-            notebook_json = json.loads(notebook_str)
-            return statistics.cal_statistics(notebook_json)
-        features = list(df_notebooks['notebook_source_file'].apply(extract_new_contents))
-
-        df_features = pd.DataFrame.from_dict(features)
-        df_features['docid'] = df_notebooks['docid']
-        return df_features
+        with open(contents_filename, 'w') as f:
+            json.dump(contents_doc, f)
