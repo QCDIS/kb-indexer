@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 
+from .. import utils
 from . import repositories
 
 
@@ -36,8 +37,7 @@ class Pipeline:
     def index(self):
         print(f'Ingesting notebooks from {self.repo.name}')
 
-        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
-        data_dir = os.path.join(data_dir, 'notebook')
+        data_dir = os.path.join(utils.get_data_dir(), 'notebook')
         data_dir = os.path.join(
             data_dir, self.repo.name, 'repositories_metadata')
         self.repo.indexer('notebooks', data_dir).bulk_ingest()

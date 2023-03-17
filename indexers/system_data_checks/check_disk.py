@@ -1,10 +1,10 @@
 import os
 
+from .. import utils
+
 
 def main():
-    data_dir = os.environ['DATA_DIR']
-
-    for dirpath, dirnames, filenames in os.walk(data_dir):
+    for dirpath, dirnames, filenames in os.walk(utils.get_data_dir()):
         if 'nltk_data' in dirpath:
             continue
         if len(filenames):

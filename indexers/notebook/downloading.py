@@ -4,14 +4,15 @@ import pandas as pd
 import kaggle
 import json
 
+from .. import utils
+
 
 class NotebookDownloader(abc.ABC):
 
     source_name: str
 
     def __init__(self):
-        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
-        data_dir = os.path.join(data_dir, 'notebook')
+        data_dir = os.path.join(utils.get_data_dir(), 'notebook')
         base = os.path.join(data_dir, self.source_name)
         self.input_dir = os.path.join(base, 'repositories_metadata/')
         self.output_dir = os.path.join(base, 'raw_notebooks/')

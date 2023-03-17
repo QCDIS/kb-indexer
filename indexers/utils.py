@@ -39,6 +39,9 @@ def create_es_client() -> Elasticsearch:
 
     """
     elasticsearch_host = os.environ.get('ELASTICSEARCH_HOST')
+    if elasticsearch_host is None:
+        raise ValueError('$ELASTICSEARCH_HOST is not defined.')
+
     elasticsearch_username = os.environ.get('ELASTICSEARCH_USERNAME')
     elasticsearch_password = os.environ.get('ELASTICSEARCH_PASSWORD')
     if elasticsearch_username and elasticsearch_password:
@@ -127,3 +130,10 @@ class ElasticsearchIndexer:
             body=record,
             )
         self.index.refresh()
+
+
+def get_data_dir():
+    data_dir = os.getenv('DATA_DIR')
+    if data_dir is None:
+        raise ValueError('$DATA_DIR is not defined.')
+    return data_dir

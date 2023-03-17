@@ -192,8 +192,7 @@ class RawNotebookPreprocessor:
     def __init__(self, source_name: str):
         self.source_name = source_name
 
-        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
-        data_dir = os.path.join(data_dir, 'notebook')
+        data_dir = os.path.join(utils.get_data_dir(), 'notebook')
         self.directories = {
             'input': f'{data_dir}/{self.source_name}/raw_notebooks/',
             'output': f'{data_dir}/{self.source_name}/notebook_lists/',

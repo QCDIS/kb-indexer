@@ -11,14 +11,15 @@ from typing import List
 from tqdm import tqdm
 from urllib.parse import quote
 
+from .. import utils
+
 
 class NotebookSearcher(abc.ABC):
 
     source_name: str
 
     def __init__(self):
-        data_dir = os.getenv('DATA_DIR', '/kb-indexer-data')
-        data_dir = os.path.join(data_dir, 'notebook')
+        data_dir = os.path.join(utils.get_data_dir(), 'notebook')
         base = os.path.join(data_dir, self.source_name)
         self.output_dir = os.path.join(base, 'repositories_metadata/')
         os.makedirs(self.output_dir, exist_ok=True)
