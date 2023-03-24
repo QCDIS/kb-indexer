@@ -13,5 +13,10 @@ def web():
 @web.command(
     help='Full indexing pipeline.',
     )
-def pipeline():
-    index_all_research_infrastructures()
+@click.option(
+    '--reindex',
+    help='Reindex all resources.',
+    is_flag=True,
+    )
+def pipeline(reindex):
+    index_all_research_infrastructures(reindex=reindex)
