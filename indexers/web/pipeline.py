@@ -419,13 +419,13 @@ def indexWebpage(url):
         return {}
 
 
-def indexWebsite(url, domain_names):
+def indexWebsite(url, domain_names, reindex=False):
     runCrawler(url, domain_names)
     cnt = 0
     print("-------------------")
     indexer = utils.ElasticsearchIndexer('webcontents')
     for url in permitted_urls:
-        if not indexer.is_in_index('url', url):
+        if reindex or (not indexer.is_in_index('url', url)):
             metadata = indexWebpage(url)
 
             if (metadata):
@@ -457,7 +457,7 @@ def envriCrawler():
     # print(validators.url(url))
 
 
-def index_all_research_infrastructures():
+def index_all_research_infrastructures(reindex=False):
     for IR in ResearchInfrastructures:
         internal_urls.clear()
         external_urls.clear()
@@ -467,4 +467,5 @@ def index_all_research_infrastructures():
         indexWebsite(
             ResearchInfrastructures[IR]['url'],
             ResearchInfrastructures[IR]['domain_names'],
+            reindex=reindex,
             )
