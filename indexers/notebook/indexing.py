@@ -22,3 +22,4 @@ class JsonIndexer(utils.ElasticsearchIndexer):
             with open(record_file, 'r') as f:
                 record = json.load(f)
             self.ingest_record(record['id'], record)
+        self.refresh_index()
