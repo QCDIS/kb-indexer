@@ -423,26 +423,18 @@ def indexWebsite(url, domain_names):
     runCrawler(url, domain_names)
     cnt = 0
     print("-------------------")
+    indexer = utils.ElasticsearchIndexer('webcontents')
     for url in permitted_urls:
-        if not (if_URL_exist(url)):
+        if not indexer.is_in_index('url', url):
             metadata = indexWebpage(url)
 
             if (metadata):
                 print(url + "\n")
-                ingest_metadataFile(metadata)
+                id_ = utils.gen_id_from_url(metadata['url'])
+                indexer.ingest_record(id_, metadata)
                 cnt = cnt + 1
                 print("Metadata ingested (" + str(cnt) + ")\n")
-
-
-def if_URL_exist(url):
-    indexer = utils.ElasticsearchIndexer('webcontents')
-    return indexer.is_in_index('url', url)
-
-
-def ingest_metadataFile(metadataFile):
-    indexer = utils.ElasticsearchIndexer('webcontents')
-    id_ = utils.gen_id_from_url(metadataFile['url'])
-    indexer.ingest_record(id_, metadataFile)
+    indexer.refresh_index()
 
 
 def envriCrawler():
@@ -476,7 +468,3 @@ def index_all_research_infrastructures():
             ResearchInfrastructures[IR]['url'],
             ResearchInfrastructures[IR]['domain_names'],
             )
-
-    indexer = utils.ElasticsearchIndexer('webcontents')
-    indexer.index.refresh()
-

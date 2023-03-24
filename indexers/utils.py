@@ -130,6 +130,9 @@ class ElasticsearchIndexer:
             body=record,
             )
 
+    def refresh_index(self):
+        self.index.refresh()
+
 
 def get_data_dir():
     data_dir = os.getenv('DATA_DIR')

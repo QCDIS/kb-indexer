@@ -33,6 +33,7 @@ class Indexer:
             self.indexer.ingest_record(id_, doc)
             if not keep_files:
                 os.remove(doc_filename)
+        self.indexer.refresh_index()
 
     def url_is_indexed(self, url):
         return self.indexer.is_in_index('source', url)

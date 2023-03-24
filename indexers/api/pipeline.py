@@ -40,3 +40,4 @@ def indexing_pipeline():
                 ).hexdigest()
 
             indexer.ingest_record(id_, index_record)
+    indexer.refresh_index()
