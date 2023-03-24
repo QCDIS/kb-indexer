@@ -129,7 +129,6 @@ class ElasticsearchIndexer:
             id=record_id,
             body=record,
             )
-        self.index.refresh()
 
 
 def get_data_dir():

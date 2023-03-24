@@ -476,3 +476,7 @@ def index_all_research_infrastructures():
             ResearchInfrastructures[IR]['url'],
             ResearchInfrastructures[IR]['domain_names'],
             )
+
+    indexer = utils.ElasticsearchIndexer('webcontents')
+    indexer.index.refresh()
+
