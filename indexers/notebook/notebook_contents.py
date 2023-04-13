@@ -6,6 +6,7 @@ import re
 import json
 from bs4 import BeautifulSoup
 
+
 # what is meaning
 class NotebookContents:
     ''' The class NotebookContents provide a set of tools to extract different contents from the notebooks. 
@@ -163,7 +164,7 @@ class NotebookContents:
         self.clean_md_text()
         self.extract_code()
         self.extract_code_comment()
-    
+
     def get_contents(self): 
         self.extract_contents()
         result = {
