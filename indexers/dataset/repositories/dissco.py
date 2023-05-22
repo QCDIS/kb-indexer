@@ -29,8 +29,8 @@ class DiSSCoDownloader(Downloader):
         with urllib.request.urlopen(url) as r:
             response = json.load(r)
 
-        for specimen in response:
-            url = f"https://hdl.handle.net/{specimen['id']}"
+        for specimen in response['data']:
+            url = specimen['id']
             if reindex or not self.indexer.url_is_indexed(url):
                 meta = self.gen_metadata(url)
                 self.save_metadata(meta)
