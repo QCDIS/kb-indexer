@@ -304,12 +304,12 @@
   },
   "hubtest.envri-fair.eu": {
     "id": 30,
-    "url": "https://hubtest.envri-fair.eu/",
+    "url": "https://envri-hub.envri.eu/",
     "domain": "Multi-domain",
     "title": "ENVRI hub",
     "acronym": "ENVRI-HUB",
     "domain_names": [
-      "hubtest.envri-fair.eu"
+      "envri-hub.envri.eu"
     ]
   }
 }
