@@ -19,12 +19,13 @@ class SeaDataNetCDIDownloader(TwoStepDownloader, SPARQLDownloader):
             ?s <http://www.w3.org/ns/dcat#dataset> ?o
         }
         """
-        return self.sparql_query(
+        urls = self.sparql_query(
             self.documents_list_url,
             query,
             max_records=max_records,
             offset=offset,
             )[:-1]
+        return [f'{url}/json' for url in urls]
 
 
 class SeaDataNetCDIConverter(Converter):
