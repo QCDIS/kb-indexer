@@ -1,5 +1,7 @@
 # Knowledge base indexer
 
+[![Publish Docker image](https://github.com/QCDIS/kb-indexer/actions/workflows/make_release.yaml/badge.svg)](https://github.com/QCDIS/kb-indexer/actions/workflows/make_release.yaml)
+
 ## Setup
 
 ### Run locally
