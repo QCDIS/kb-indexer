@@ -38,6 +38,10 @@ KAGGLE_KEY="<A Kaggle API key>"
 GITHUB_API_TOKEN="<A GitHub API token>"
 ```
 
+The Kaggle and GitHub environment variables are required when indexing notebooks (see below).
+For Kaggle, follow the [documentation](https://github.com/Kaggle/kaggle-api#api-credentials).
+For GitHub, you can use a fine-grained token with read-only access to public repositories.
+
 
 ## Usage
 
